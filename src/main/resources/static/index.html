@@ -1,0 +1,50 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Spring Boot API</title>
+		<!-- Tailwind CSS CDN -->
+		<script src="https://cdn.tailwindcss.com"></script>
+		<script>
+			tailwind.config = {
+				theme: {
+					extend: {
+						colors: {
+							spring: {
+								blue: '#6DB33F', // Spring Boot green
+								dark: '#222',
+								light: '#F4F8F9',
+								accent: '#3A9A5B',
+							},
+						},
+						fontFamily: {
+							sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+						},
+					},
+				},
+			}
+		</script>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body class="bg-spring-light min-h-screen flex flex-col items-center justify-center font-sans">
+		<div class="bg-white shadow-xl rounded-2xl p-10 max-w-lg w-full flex flex-col items-center border border-spring-blue/10">
+				<div class="flex items-center gap-3 mb-6">
+						<img src="https://upload.wikimedia.org/wikipedia/commons/7/79/Spring_Boot.svg" alt="Spring Boot Logo" class="w-10 h-10"/>
+						<span class="text-2xl font-semibold text-spring-blue tracking-tight">Spring Boot API</span>
+				</div>
+                <div class="text-center gap-2 mb-5">
+                    <p class="text-spring-dark text-center text-lg">Welcome to Spring Boot Ecommcerce API.</p>
+                    <p class="text-blue-800/80 font-bold text-sm">powered by PostgreSQL Database</p>
+                </div>
+				<div class="flex flex-col gap-2 w-full">
+						<a href="#" class="transition bg-spring-blue hover:bg-spring-accent text-white font-semibold py-2 rounded-lg text-center shadow-sm">API Docs</a>
+						<a href="#" class="transition border border-spring-blue text-spring-blue hover:bg-spring-blue hover:text-white font-semibold py-2 rounded-lg text-center">Contact Developer Team</a>
+				</div>
+				<footer class="mt-8 text-xs text-spring-dark/60">&copy; 2025 Team SaveItForLater</footer>
+		</div>
+</body>
+</html>
