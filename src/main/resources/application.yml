@@ -2,23 +2,49 @@ spring:
     application:
         name: ecommerce
 
+    # ===================================================================
+    # DATA SOURCE CONFIGURATION
+    # =Request: Use placeholders for sensitive data.
+    # ===================================================================
     datasource:
         driver-class-name: org.postgresql.Driver
-        url: jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres?user=postgres.wtfgsjuopucxobcaeklu&password=SAVEITFORLATER1247
-        username: postgres.wtfgsjuopucxobcaeklu
-        password: SAVEITFORLATER1247
+        url: jdbc:postgresql://aws-1-ap-south-1.pooler.supabase.com:5432/postgres
+        username: ${SPRING_DATASOURCE_USERNAME}
+        password: ${SPRING_DATASOURCE_PASSWORD}
+        hikari:
+            maximum-pool-size: 5
+
+    # ===================================================================
+    # JPA (HIBERNATE) CONFIGURATION
+    # ===================================================================
     jpa:
         show-sql: true
         hibernate:
+            # 'validate' is the correct, safe setting when using Flyway.
+            # 'update' is dangerous in production and conflicts with Flyway.
             ddl-auto: update
-            naming:
-                 physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+            # naming:
+            #     physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         properties:
             hibernate:
+                # Optional: Improves readability of logs when show-sql is true
                  '[format_sql]': true
 
     flyway:
+        enabled: false
+        # Tell Flyway to use the same externalized properties as the main data source
+        url: ${spring.datasource.url}
+        user: ${spring.datasource.username}
+        password: ${spring.datasource.password}
+        # Allows Flyway to create its schema_history table on the first run
         baseline-on-migrate: true
-        
+
+# ===================================================================
+# SERVER & APP CONFIGURATION
+# ===================================================================
+app:
+    frontend:
+        origin: http://localhost:3000
+
 server:
     port: 8080

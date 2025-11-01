@@ -1,0 +1,24 @@
+# ===============================================
+# TEST-SPECIFIC DATABASE CONFIGURATION
+# This file overrides src/main/resources/application.properties during tests.
+# ===============================================
+
+# Configure the H2 in-memory database
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+  
+  # Configure JPA/Hibernate for H2
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+  
+  # Configure Flyway to use the H2 database for tests
+  flyway:
+    url:  jdbc:h2:mem:testdb
+    user: sa
+    password:
