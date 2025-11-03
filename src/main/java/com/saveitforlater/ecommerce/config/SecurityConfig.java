@@ -1,0 +1,120 @@
+package com.saveitforlater.ecommerce.config; // Your package
+
+import com.saveitforlater.ecommerce.domain.user.UserDetailsServiceImpl;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
+
+@Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+
+    private final UserDetailsServiceImpl userDetailsService;
+
+    @Value("${app.frontend.origin}")
+    private String frontendOrigin;
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(UserDetailsServiceImpl userDetailsService, PasswordEncoder passwordEncoder) throws Exception {
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
+        authenticationProvider.setUserDetailsService(userDetailsService);
+        authenticationProvider.setPasswordEncoder(passwordEncoder);
+
+        return new ProviderManager(authenticationProvider);
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+        // 1. Configure CORS
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
+
+        // 2. Configure CSRF Protection
+//        http.csrf(csrf -> csrf
+//                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+//                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+//                // *** THIS IS THE FIX ***
+//                // We MUST ignore the login and register endpoints.
+//                // A user doesn't have a CSRF token before they log in.
+//                .ignoringRequestMatchers("*" )
+//
+//        );
+        http.csrf(AbstractHttpConfigurer::disable);
+
+        // 3. Disable Spring Security's default login/logout pages
+        http.formLogin(AbstractHttpConfigurer::disable);
+        http.logout(AbstractHttpConfigurer::disable);
+
+        // 4. Configure Authorization Rules
+        http.authorizeHttpRequests(authz -> authz
+                // Public endpoints
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/products/**", "/api/v1/categories/**").permitAll()
+
+                // Secure all other endpoints
+                .requestMatchers("/api/v1/users/me", "/api/v1/orders/**", "/api/v1/cart/**").authenticated()
+                .requestMatchers("/api/auth/session").authenticated()
+                .anyRequest().authenticated()
+        );
+
+        // 5. Set our custom UserDetailsService
+        http.userDetailsService(userDetailsService);
+
+        // 6. Add a custom AuthenticationEntryPoint for REST API (sends 401)
+        http.exceptionHandling(ex -> ex
+                // This is called when an unauthenticated user tries to access a protected route.
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    // Simple JSON response
+                    response.getWriter().write("{\"error\": \"User not authenticated\"}");
+                })
+                // This is called when an authenticated user tries to access a route they don't have permission for.
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json");
+                    // Simple JSON response
+                    response.getWriter().write("{\"error\": \"Forbidden route\"}");
+                })
+        );
+
+        return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowCredentials(true);
+        configuration.setAllowedOrigins(List.of(frontendOrigin));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type", "X-XSRF-TOKEN"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+}
