@@ -39,4 +39,8 @@ public class AuthService {
 
         return userMapper.toUserResponse(user);
     }
+
+    public boolean userExists(String email) {
+        return userRepository.findByEmail(email).isPresent();
+    }
 }

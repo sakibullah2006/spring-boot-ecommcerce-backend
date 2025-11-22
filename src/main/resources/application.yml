@@ -7,12 +7,11 @@ spring:
     # =Request: Use placeholders for sensitive data.
     # ===================================================================
     datasource:
-        driver-class-name: org.postgresql.Driver
-        url: jdbc:postgresql://aws-1-ap-south-1.pooler.supabase.com:5432/postgres
-        username: ${SPRING_DATASOURCE_USERNAME}
-        password: ${SPRING_DATASOURCE_PASSWORD}
-        hikari:
-            maximum-pool-size: 5
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/springboot?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+        username: springboot
+        password: springboot
+
 
     # ===================================================================
     # JPA (HIBERNATE) CONFIGURATION
@@ -28,7 +27,8 @@ spring:
         properties:
             hibernate:
                 # Optional: Improves readability of logs when show-sql is true
-                 '[format_sql]': true
+                '[format_sql]': true
+                dialect: org.hibernate.dialect.MySQLDialect
 
     flyway:
         enabled: false
@@ -48,4 +48,3 @@ app:
 
 server:
     port: 8080
-
