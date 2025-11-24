@@ -1,4 +1,5 @@
 package com.saveitforlater.ecommerce.persistence.repository.product;
+
 import com.saveitforlater.ecommerce.persistence.entity.product.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
