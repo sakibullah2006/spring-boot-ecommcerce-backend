@@ -47,7 +47,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(UserDetailsServiceImpl userDetailsService, PasswordEncoder passwordEncoder) throws Exception {
+    public AuthenticationManager authenticationManager(UserDetailsServiceImpl userDetailsService, PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
         authenticationProvider.setUserDetailsService(userDetailsService);
         authenticationProvider.setPasswordEncoder(passwordEncoder);
@@ -79,6 +79,7 @@ public class SecurityConfig {
         // Configure session management
         http.sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .sessionFixation().migrateSession() // Protect against session fixation attacks
                 .maximumSessions(1)
                 .maxSessionsPreventsLogin(false)
                 .sessionRegistry(sessionRegistry())
@@ -86,34 +87,54 @@ public class SecurityConfig {
 
         // 4. Configure Authorization Rules
         http.authorizeHttpRequests(authz -> authz
-                // Public endpoints
+                // Public endpoints - allow anonymous access
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/products/**", "/api/v1/categories/**").permitAll()
+                .requestMatchers("/api/auth/debug/**").permitAll() // Debug endpoints (remove in production)
+                .requestMatchers("/error").permitAll() // Spring Boot error endpoint
+                .requestMatchers("/actuator/health").permitAll() // Health check endpoint
 
                 // Secure all other endpoints
                 .requestMatchers("/api/v1/users/me", "/api/v1/orders/**", "/api/v1/cart/**").authenticated()
                 .requestMatchers("/api/auth/session").authenticated()
+                .requestMatchers("/actuator/**").hasRole("ADMIN") // Admin-only actuator endpoints
                 .anyRequest().authenticated()
         );
 
         // 5. Set our custom UserDetailsService
         http.userDetailsService(userDetailsService);
 
-        // 6. Add a custom AuthenticationEntryPoint for REST API (sends 401)
+        // 6. Add custom exception handling for REST API
         http.exceptionHandling(ex -> ex
                 // This is called when an unauthenticated user tries to access a protected route.
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
-                    // Simple JSON response
-                    response.getWriter().write("{\"error\": \"User not authenticated\"}");
+                    response.setCharacterEncoding("UTF-8");
+
+                    String jsonResponse = String.format(
+                        "{\"error\":\"AUTHENTICATION_REQUIRED\",\"message\":\"%s\",\"status\":401,\"timestamp\":\"%s\",\"path\":\"%s\"}",
+                        "Authentication required to access this resource",
+                        java.time.LocalDateTime.now().toString(),
+                        request.getRequestURI()
+                    );
+
+                    response.getWriter().write(jsonResponse);
                 })
                 // This is called when an authenticated user tries to access a route they don't have permission for.
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType("application/json");
-                    // Simple JSON response
-                    response.getWriter().write("{\"error\": \"Forbidden route\"}");
+                    response.setCharacterEncoding("UTF-8");
+
+                    String jsonResponse = String.format(
+                        "{\"error\":\"ACCESS_DENIED\",\"message\":\"%s\",\"status\":403,\"timestamp\":\"%s\",\"path\":\"%s\"}",
+                        "Access denied - insufficient privileges",
+                        java.time.LocalDateTime.now().toString(),
+                        request.getRequestURI()
+                    );
+
+                    response.getWriter().write(jsonResponse);
                 })
         );
 
