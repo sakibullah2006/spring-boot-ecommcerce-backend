@@ -1,6 +1,7 @@
 package com.saveitforlater.ecommerce.domain.product;
 
 import com.saveitforlater.ecommerce.api.product.dto.CreateProductRequest;
+import com.saveitforlater.ecommerce.api.product.dto.ProductAttributeDto;
 import com.saveitforlater.ecommerce.api.product.dto.ProductResponse;
 import com.saveitforlater.ecommerce.api.product.dto.UpdateProductRequest;
 import com.saveitforlater.ecommerce.api.product.mapper.ProductMapper;
@@ -8,7 +9,9 @@ import com.saveitforlater.ecommerce.domain.category.exception.CategoryNotFoundEx
 import com.saveitforlater.ecommerce.domain.product.exception.ProductNotFoundException;
 import com.saveitforlater.ecommerce.domain.product.exception.ProductSkuAlreadyExistsException;
 import com.saveitforlater.ecommerce.persistence.entity.category.Category;
+import com.saveitforlater.ecommerce.persistence.entity.product.AttributeOption;
 import com.saveitforlater.ecommerce.persistence.entity.product.Product;
+import com.saveitforlater.ecommerce.persistence.entity.product.ProductAttribute;
 import com.saveitforlater.ecommerce.persistence.repository.category.CategoryRepository;
 import com.saveitforlater.ecommerce.persistence.repository.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -103,6 +106,28 @@ public class ProductService {
             log.debug("Set {} categories for new product: {}", categories.size(), request.name());
         }
 
+        // Set attributes if provided
+        if (request.attributes() != null && !request.attributes().isEmpty()) {
+            for (ProductAttributeDto attrDto : request.attributes()) {
+                ProductAttribute attribute = new ProductAttribute();
+                attribute.setName(attrDto.name());
+                attribute.setSlug(attrDto.slug());
+
+                // Add options to attribute
+                if (attrDto.options() != null) {
+                    for (ProductAttributeDto.AttributeOptionDto optionDto : attrDto.options()) {
+                        AttributeOption option = new AttributeOption();
+                        option.setName(optionDto.name());
+                        option.setSlug(optionDto.slug());
+                        attribute.addOption(option);
+                    }
+                }
+
+                product.addAttribute(attribute);
+            }
+            log.debug("Set {} attributes for new product: {}", request.attributes().size(), request.name());
+        }
+
         // Save product
         Product savedProduct = productRepository.save(product);
         log.info("Successfully created product with ID: {} and SKU: {}",
@@ -144,6 +169,32 @@ public class ProductService {
             existingProduct.getCategories().clear();
             existingProduct.setCategories(categories);
             log.debug("Updated categories for product: {}", existingProduct.getName());
+        }
+
+        // Update attributes if provided
+        if (request.attributes() != null) {
+            // Clear existing attributes
+            existingProduct.getAttributes().clear();
+
+            // Add new attributes
+            for (ProductAttributeDto attrDto : request.attributes()) {
+                ProductAttribute attribute = new ProductAttribute();
+                attribute.setName(attrDto.name());
+                attribute.setSlug(attrDto.slug());
+
+                // Add options to attribute
+                if (attrDto.options() != null) {
+                    for (ProductAttributeDto.AttributeOptionDto optionDto : attrDto.options()) {
+                        AttributeOption option = new AttributeOption();
+                        option.setName(optionDto.name());
+                        option.setSlug(optionDto.slug());
+                        attribute.addOption(option);
+                    }
+                }
+
+                existingProduct.addAttribute(attribute);
+            }
+            log.debug("Updated attributes for product: {}", existingProduct.getName());
         }
 
         // Save updated product

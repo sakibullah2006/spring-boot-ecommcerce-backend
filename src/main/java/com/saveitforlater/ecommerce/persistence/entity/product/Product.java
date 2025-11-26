@@ -12,7 +12,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -58,6 +60,10 @@ public class Product {
     )
     private Set<Category> categories = new HashSet<>();
 
+    // Optional product attributes like size and color
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductAttribute> attributes = new ArrayList<>();
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -72,5 +78,16 @@ public class Product {
         if (this.publicId == null) {
             this.publicId = UUID.randomUUID();
         }
+    }
+
+    // Helper methods for managing attributes
+    public void addAttribute(ProductAttribute attribute) {
+        attributes.add(attribute);
+        attribute.setProduct(this);
+    }
+
+    public void removeAttribute(ProductAttribute attribute) {
+        attributes.remove(attribute);
+        attribute.setProduct(null);
     }
 }
