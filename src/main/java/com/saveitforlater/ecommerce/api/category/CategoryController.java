@@ -41,7 +41,7 @@ public class CategoryController {
      */
     @GetMapping("/paginated")
     public ResponseEntity<Page<CategoryResponse>> getCategories(
-            @PageableDefault(size = 20) Pageable pageable) {
+            @PageableDefault(size = 20, sort = "name") Pageable pageable) {
         log.debug("GET /api/categories/paginated - Fetching categories with pagination: {}", pageable);
         Page<CategoryResponse> categories = categoryService.getCategories(pageable);
         return ResponseEntity.ok(categories);
