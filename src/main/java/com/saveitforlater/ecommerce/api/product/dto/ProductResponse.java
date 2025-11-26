@@ -1,6 +1,5 @@
 package com.saveitforlater.ecommerce.api.product.dto;
 
-import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.Set;
 import java.util.UUID;
@@ -12,9 +11,11 @@ public record ProductResponse(
         String name,
         String description,
         BigDecimal price,
+        BigDecimal salePrice,
+        int stockQuantity,
         Set<CategorySummary> categories
 ) {
     // Nested DTO
-    public record CategorySummary(UUID id, String name) {}
+    public record CategorySummary(UUID id, String name, UUID parentId) {}
 }
 

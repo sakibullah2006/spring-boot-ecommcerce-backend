@@ -13,5 +13,6 @@ public interface ProductMapper {
     ProductResponse toProductResponse(Product product);
 
     @Mapping(source = "publicId", target = "id")
+    @Mapping(source = "parent.publicId", target = "parentId")
     ProductResponse.CategorySummary toCategorySummary(Category category);
 }
