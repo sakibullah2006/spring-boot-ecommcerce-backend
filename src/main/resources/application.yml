@@ -21,7 +21,7 @@ spring:
         hibernate:
             # 'validate' is the correct, safe setting when using Flyway.
             # 'update' is dangerous in production and conflicts with Flyway.
-            ddl-auto: update
+            ddl-auto: create-drop
             # naming:
             #     physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         properties:

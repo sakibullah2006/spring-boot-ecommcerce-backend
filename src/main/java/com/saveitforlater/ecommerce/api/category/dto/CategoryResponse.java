@@ -1,13 +1,17 @@
 package com.saveitforlater.ecommerce.api.category.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import java.util.Set;
 import java.util.UUID;
 
 // Response DTO
 public record CategoryResponse(
+        // id represents the publicId in the entity
         UUID id,
         String name,
         String description,
-        UUID parentId // Public ID of the parent (can be null)
-) {}
+        CategorySummary parent, // Parent category (can be null)
+        Set<CategorySummary> children // Child categories
+) {
+    // Nested DTO for parent and children
+    public record CategorySummary(UUID id, String name) {}
+}

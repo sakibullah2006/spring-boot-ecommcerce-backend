@@ -9,8 +9,8 @@ import java.math.BigDecimal;
 import java.util.Set;
 import java.util.UUID;
 
-// Request DTO
-public record CreateProductRequest(
+// Request DTO for updating a product
+public record UpdateProductRequest(
         @NotBlank
         @Size(max = 100)
         String sku,
@@ -35,3 +35,4 @@ public record CreateProductRequest(
         @NotNull
         Set<UUID> categoryIds
 ) {}
+
