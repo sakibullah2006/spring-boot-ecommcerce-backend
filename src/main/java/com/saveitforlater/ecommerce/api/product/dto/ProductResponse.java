@@ -9,6 +9,7 @@ public record ProductResponse(
         String id,
         String sku,
         String name,
+        String slug,
         String description,
         BigDecimal price,
         BigDecimal salePrice,
@@ -17,6 +18,6 @@ public record ProductResponse(
         List<ProductAttributeValueDto> attributes
 ) {
     // Nested DTO
-    public record CategorySummary(String id, String name, String parentId) {}
+    public record CategorySummary(String id, String name, String slug, String parentId) {}
 }
 

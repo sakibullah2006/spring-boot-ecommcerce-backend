@@ -8,6 +8,8 @@ import com.saveitforlater.ecommerce.api.product.mapper.ProductMapper;
 import com.saveitforlater.ecommerce.domain.category.exception.CategoryNotFoundException;
 import com.saveitforlater.ecommerce.domain.product.exception.ProductNotFoundException;
 import com.saveitforlater.ecommerce.domain.product.exception.ProductSkuAlreadyExistsException;
+import com.saveitforlater.ecommerce.domain.product.exception.ProductSlugAlreadyExistsException;
+import com.saveitforlater.ecommerce.domain.util.SlugGenerator;
 import com.saveitforlater.ecommerce.persistence.entity.category.Category;
 import com.saveitforlater.ecommerce.persistence.entity.product.*;
 import com.saveitforlater.ecommerce.persistence.repository.category.CategoryRepository;
@@ -92,8 +94,25 @@ public class ProductService {
             throw ProductSkuAlreadyExistsException.withSku(request.sku());
         }
 
+        // Generate or validate slug
+        String slug = request.slug();
+        if (slug == null || slug.isBlank()) {
+            slug = SlugGenerator.generateSlug(request.name());
+            log.debug("Auto-generated slug: {} from name: {}", slug, request.name());
+        }
+
+        // Ensure slug is unique, append counter if needed
+        String finalSlug = slug;
+        int counter = 1;
+        while (productRepository.findBySlug(finalSlug).isPresent()) {
+            finalSlug = SlugGenerator.generateUniqueSlug(slug, counter++);
+            log.debug("Slug conflict detected, trying: {}", finalSlug);
+        }
+
         // Map basic fields
         Product product = productMapper.toProduct(request);
+        product.setSlug(finalSlug);
+        log.debug("Set final slug: {} for product: {}", finalSlug, request.name());
 
         // Set categories if provided
         if (request.categoryIds() != null && !request.categoryIds().isEmpty()) {
@@ -152,6 +171,17 @@ public class ProductService {
                     });
             existingProduct.setSku(request.sku());
             log.debug("Updated SKU for product: {}", publicId);
+        }
+
+        // Check if new slug conflicts with existing products (excluding current product)
+        if (request.slug() != null && !request.slug().equals(existingProduct.getSlug())) {
+            productRepository.findBySlug(request.slug())
+                    .filter(product -> !product.getPublicId().equals(publicId))
+                    .ifPresent(product -> {
+                        throw ProductSlugAlreadyExistsException.withSlug(request.slug());
+                    });
+            existingProduct.setSlug(request.slug());
+            log.debug("Updated slug for product: {}", publicId);
         }
 
         // Update basic fields only if provided

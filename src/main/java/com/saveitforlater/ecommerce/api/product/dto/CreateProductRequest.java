@@ -19,6 +19,9 @@ public record CreateProductRequest(
         @Size(max = 255)
         String name,
 
+        @Size(max = 255)
+        String slug,
+
         String description,
 
         @NotNull

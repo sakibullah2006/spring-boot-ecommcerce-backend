@@ -4,6 +4,7 @@ import com.saveitforlater.ecommerce.api.auth.exception.ErrorResponse;
 import com.saveitforlater.ecommerce.domain.category.exception.CategoryHasChildrenException;
 import com.saveitforlater.ecommerce.domain.category.exception.CategoryNameAlreadyExistsException;
 import com.saveitforlater.ecommerce.domain.category.exception.CategoryNotFoundException;
+import com.saveitforlater.ecommerce.domain.category.exception.CategorySlugAlreadyExistsException;
 import com.saveitforlater.ecommerce.domain.category.exception.IllegalCategoryArgumentException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -35,6 +36,20 @@ public class CategoryExceptionHandler {
 
         ErrorResponse errorResponse = new ErrorResponse(
                 "CATEGORY_NAME_ALREADY_EXISTS",
+                ex.getMessage(),
+                HttpStatus.CONFLICT.value(),
+                "/api/categories"
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(CategorySlugAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleCategorySlugAlreadyExists(CategorySlugAlreadyExistsException ex) {
+        log.warn("Category slug already exists: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                "CATEGORY_SLUG_ALREADY_EXISTS",
                 ex.getMessage(),
                 HttpStatus.CONFLICT.value(),
                 "/api/categories"

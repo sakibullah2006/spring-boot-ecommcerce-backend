@@ -9,6 +9,9 @@ public record UpdateCategoryRequest(
         @Size(max = 255)
         String name,
 
+        @Size(max = 255)
+        String slug,
+
         String description,
 
         String parentId // Public ID of the parent (can be null)

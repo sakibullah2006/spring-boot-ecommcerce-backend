@@ -7,6 +7,8 @@ import com.saveitforlater.ecommerce.api.category.mapper.CategoryMapper;
 import com.saveitforlater.ecommerce.domain.category.exception.CategoryHasChildrenException;
 import com.saveitforlater.ecommerce.domain.category.exception.CategoryNameAlreadyExistsException;
 import com.saveitforlater.ecommerce.domain.category.exception.CategoryNotFoundException;
+import com.saveitforlater.ecommerce.domain.category.exception.CategorySlugAlreadyExistsException;
+import com.saveitforlater.ecommerce.domain.util.SlugGenerator;
 import com.saveitforlater.ecommerce.persistence.entity.category.Category;
 import com.saveitforlater.ecommerce.persistence.repository.category.CategoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -82,8 +84,25 @@ public class CategoryService {
             throw CategoryNameAlreadyExistsException.withName(request.name());
         }
 
+        // Generate or validate slug
+        String slug = request.slug();
+        if (slug == null || slug.isBlank()) {
+            slug = SlugGenerator.generateSlug(request.name());
+            log.debug("Auto-generated slug: {} from name: {}", slug, request.name());
+        }
+
+        // Ensure slug is unique, append counter if needed
+        String finalSlug = slug;
+        int counter = 1;
+        while (categoryRepository.findBySlug(finalSlug).isPresent()) {
+            finalSlug = SlugGenerator.generateUniqueSlug(slug, counter++);
+            log.debug("Slug conflict detected, trying: {}", finalSlug);
+        }
+
         // Map basic fields
         Category category = categoryMapper.toCategory(request);
+        category.setSlug(finalSlug);
+        log.debug("Set final slug: {} for category: {}", finalSlug, request.name());
 
         // Set parent if provided
         if (request.parentId() != null) {
@@ -118,6 +137,15 @@ public class CategoryService {
                 .ifPresent(category -> {
                     throw CategoryNameAlreadyExistsException.withName(request.name());
                 });
+
+        // Check if new slug conflicts with existing categories (excluding current category)
+        if (request.slug() != null) {
+            categoryRepository.findBySlug(request.slug())
+                    .filter(category -> !category.getPublicId().equals(publicId))
+                    .ifPresent(category -> {
+                        throw CategorySlugAlreadyExistsException.withSlug(request.slug());
+                    });
+        }
 
         // Update basic fields
         categoryMapper.updateCategoryFromRequest(request, existingCategory);

@@ -18,6 +18,9 @@ public record UpdateProductRequest(
         @Size(max = 255)
         String name,
 
+        @Size(max = 255)
+        String slug,
+
         String description,
 
         @PositiveOrZero(message = "Price must be zero or positive")

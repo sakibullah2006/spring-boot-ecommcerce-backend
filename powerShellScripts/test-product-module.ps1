@@ -172,8 +172,8 @@ catch {
     $categoryId = "ceb0d1b7-cc97-11f0-aa56-00e04c816b21" # Fallback
 }
 
-# Test 4: Create Simple Product (No Attributes)
-Write-TestCase "POST /api/products - Create simple product"
+# Test 4: Create Simple Product (No Attributes, No Slug - Auto-generated)
+Write-TestCase "POST /api/products - Create simple product without slug"
 $simpleProductBody = @{
     sku = "TEST-SIMPLE-$(Get-Random -Maximum 99999)"
     name = "Test Simple Product"
@@ -186,11 +186,72 @@ $simpleProductBody = @{
 
 $simpleProduct = Invoke-ApiRequest -Method Post -Uri "$BaseUrl/api/products" `
     -Body $simpleProductBody -WebSession $adminSession `
-    -ExpectedStatusCode 201 -TestName "Create simple product"
+    -ExpectedStatusCode 201 -TestName "Create simple product without slug"
 
 $simpleProductId = $simpleProduct.id
 if ($simpleProduct) {
     Write-Host "  Created Product ID: $simpleProductId" -ForegroundColor Cyan
+    Write-Host "  Auto-generated Slug: $($simpleProduct.slug)" -ForegroundColor Cyan
+    if ($simpleProduct.slug -eq "test-simple-product") {
+        Write-Success "Slug auto-generated correctly from product name"
+    } else {
+        Write-Failure "Slug auto-generation" "Expected: test-simple-product, Got: $($simpleProduct.slug)"
+    }
+}
+
+# Test 4b: Create Product with Custom Slug
+Write-TestCase "POST /api/products - Create product with custom slug"
+$customSlugBody = @{
+    sku = "TEST-CUSTOM-SLUG-$(Get-Random -Maximum 99999)"
+    name = "Custom Slug Product"
+    slug = "my-custom-product-slug"
+    description = "Product with custom slug"
+    price = 149.99
+    salePrice = 129.99
+    stockQuantity = 40
+    categoryIds = @($categoryId)
+} | ConvertTo-Json
+
+$customSlugProduct = Invoke-ApiRequest -Method Post -Uri "$BaseUrl/api/products" `
+    -Body $customSlugBody -WebSession $adminSession `
+    -ExpectedStatusCode 201 -TestName "Create product with custom slug"
+
+$customSlugProductId = $customSlugProduct.id
+if ($customSlugProduct) {
+    Write-Host "  Created Product ID: $customSlugProductId" -ForegroundColor Cyan
+    Write-Host "  Custom Slug: $($customSlugProduct.slug)" -ForegroundColor Cyan
+    if ($customSlugProduct.slug -eq "my-custom-product-slug") {
+        Write-Success "Custom slug preserved correctly"
+    } else {
+        Write-Failure "Custom slug preservation" "Expected: my-custom-product-slug, Got: $($customSlugProduct.slug)"
+    }
+}
+
+# Test 4c: Create Product with Duplicate Name (Slug Auto-increment)
+Write-TestCase "POST /api/products - Create product with duplicate name (slug conflict)"
+$duplicateNameBody = @{
+    sku = "TEST-DUP-NAME-$(Get-Random -Maximum 99999)"
+    name = "Test Simple Product"
+    description = "Another product with same name"
+    price = 89.99
+    salePrice = 79.99
+    stockQuantity = 25
+    categoryIds = @($categoryId)
+} | ConvertTo-Json
+
+$duplicateNameProduct = Invoke-ApiRequest -Method Post -Uri "$BaseUrl/api/products" `
+    -Body $duplicateNameBody -WebSession $adminSession `
+    -ExpectedStatusCode 201 -TestName "Create product with duplicate name"
+
+$duplicateNameProductId = $duplicateNameProduct.id
+if ($duplicateNameProduct) {
+    Write-Host "  Created Product ID: $duplicateNameProductId" -ForegroundColor Cyan
+    Write-Host "  Auto-generated Slug with Counter: $($duplicateNameProduct.slug)" -ForegroundColor Cyan
+    if ($duplicateNameProduct.slug -match "^test-simple-product-\d+$") {
+        Write-Success "Slug conflict resolved with counter"
+    } else {
+        Write-Failure "Slug conflict resolution" "Expected pattern: test-simple-product-N, Got: $($duplicateNameProduct.slug)"
+    }
 }
 
 # Test 5: Create Product with Attributes
@@ -634,6 +695,142 @@ Invoke-ApiRequest -Method Delete -Uri "$BaseUrl/api/attributes/some-attr-id" `
     -ExpectedStatusCode 401 -TestName "Deactivate attribute without authentication"
 
 # ========================================
+# Category Slug Tests (Admin Only)
+# ========================================
+
+Write-TestHeader "Category Slug Auto-Generation Tests (Admin Only)"
+
+# Test 35: Create Category without Slug (Auto-generated)
+Write-TestCase "POST /api/categories - Create category without slug"
+$categoryNoSlugBody = @{
+    name = "Electronics & Gadgets $(Get-Random -Maximum 999)"
+    description = "Category for electronics and gadgets"
+} | ConvertTo-Json
+
+$categoryNoSlug = Invoke-ApiRequest -Method Post -Uri "$BaseUrl/api/categories" `
+    -Body $categoryNoSlugBody -WebSession $adminSession `
+    -ExpectedStatusCode 201 -TestName "Create category without slug"
+
+$categoryNoSlugId = $categoryNoSlug.id
+if ($categoryNoSlug) {
+    Write-Host "  Created Category ID: $categoryNoSlugId" -ForegroundColor Cyan
+    Write-Host "  Auto-generated Slug: $($categoryNoSlug.slug)" -ForegroundColor Cyan
+    if ($categoryNoSlug.slug -match "^electronics-gadgets-\d+$") {
+        Write-Success "Category slug auto-generated correctly"
+    } else {
+        Write-Host "  Expected pattern: electronics-gadgets-N" -ForegroundColor DarkYellow
+    }
+}
+
+# Test 36: Create Category with Custom Slug
+Write-TestCase "POST /api/categories - Create category with custom slug"
+$categoryCustomSlugBody = @{
+    name = "Custom Category Name"
+    slug = "my-custom-category-slug"
+    description = "Category with custom slug"
+} | ConvertTo-Json
+
+$categoryCustomSlug = Invoke-ApiRequest -Method Post -Uri "$BaseUrl/api/categories" `
+    -Body $categoryCustomSlugBody -WebSession $adminSession `
+    -ExpectedStatusCode 201 -TestName "Create category with custom slug"
+
+$categoryCustomSlugId = $categoryCustomSlug.id
+if ($categoryCustomSlug) {
+    Write-Host "  Created Category ID: $categoryCustomSlugId" -ForegroundColor Cyan
+    Write-Host "  Custom Slug: $($categoryCustomSlug.slug)" -ForegroundColor Cyan
+    if ($categoryCustomSlug.slug -eq "my-custom-category-slug") {
+        Write-Success "Custom category slug preserved correctly"
+    } else {
+        Write-Failure "Custom category slug preservation" "Expected: my-custom-category-slug, Got: $($categoryCustomSlug.slug)"
+    }
+}
+
+# Test 37: Create Category with Same Slug (Should Auto-increment)
+Write-TestCase "POST /api/categories - Create category with conflicting slug"
+$categoryDupNameBody = @{
+    name = "Another Custom Category $(Get-Random -Maximum 999)"
+    slug = "my-custom-category-slug"  # Same slug as Test 36
+    description = "Category with conflicting slug"
+} | ConvertTo-Json
+
+$categoryDupName = Invoke-ApiRequest -Method Post -Uri "$BaseUrl/api/categories" `
+    -Body $categoryDupNameBody -WebSession $adminSession `
+    -ExpectedStatusCode 201 -TestName "Create category with conflicting slug"
+
+$categoryDupNameId = $categoryDupName.id
+if ($categoryDupName) {
+    Write-Host "  Created Category ID: $categoryDupNameId" -ForegroundColor Cyan
+    Write-Host "  Auto-incremented Slug: $($categoryDupName.slug)" -ForegroundColor Cyan
+    if ($categoryDupName.slug -match "^my-custom-category-slug-\d+$") {
+        Write-Success "Category slug conflict resolved with counter"
+    } else {
+        Write-Failure "Category slug conflict resolution" "Expected pattern: my-custom-category-slug-N, Got: $($categoryDupName.slug)"
+    }
+}
+
+# Test 38: Create Category with Special Characters in Name
+Write-TestCase "POST /api/categories - Create category with special characters"
+$categorySpecialCharsBody = @{
+    name = "Sports & Outdoor Activities! @2024"
+    description = "Category with special characters in name"
+} | ConvertTo-Json
+
+$categorySpecialChars = Invoke-ApiRequest -Method Post -Uri "$BaseUrl/api/categories" `
+    -Body $categorySpecialCharsBody -WebSession $adminSession `
+    -ExpectedStatusCode 201 -TestName "Create category with special characters"
+
+$categorySpecialCharsId = $categorySpecialChars.id
+if ($categorySpecialChars) {
+    Write-Host "  Created Category ID: $categorySpecialCharsId" -ForegroundColor Cyan
+    Write-Host "  Sanitized Slug: $($categorySpecialChars.slug)" -ForegroundColor Cyan
+    if ($categorySpecialChars.slug -match "^sports-outdoor-activities") {
+        Write-Success "Special characters removed from slug correctly"
+    } else {
+        Write-Host "  Generated slug: $($categorySpecialChars.slug)" -ForegroundColor DarkYellow
+    }
+}
+
+# Cleanup created categories
+if ($categoryNoSlugId) {
+    try {
+        Invoke-RestMethod -Uri "$BaseUrl/api/categories/$categoryNoSlugId" `
+            -Method Delete -WebSession $adminSession | Out-Null
+    } catch { }
+}
+if ($categoryCustomSlugId) {
+    try {
+        Invoke-RestMethod -Uri "$BaseUrl/api/categories/$categoryCustomSlugId" `
+            -Method Delete -WebSession $adminSession | Out-Null
+    } catch { }
+}
+if ($categoryDupNameId) {
+    try {
+        Invoke-RestMethod -Uri "$BaseUrl/api/categories/$categoryDupNameId" `
+            -Method Delete -WebSession $adminSession | Out-Null
+    } catch { }
+}
+if ($categorySpecialCharsId) {
+    try {
+        Invoke-RestMethod -Uri "$BaseUrl/api/categories/$categorySpecialCharsId" `
+            -Method Delete -WebSession $adminSession | Out-Null
+    } catch { }
+}
+
+# Cleanup test products with custom slugs
+if ($customSlugProductId) {
+    try {
+        Invoke-RestMethod -Uri "$BaseUrl/api/products/$customSlugProductId" `
+            -Method Delete -WebSession $adminSession | Out-Null
+    } catch { }
+}
+if ($duplicateNameProductId) {
+    try {
+        Invoke-RestMethod -Uri "$BaseUrl/api/products/$duplicateNameProductId" `
+            -Method Delete -WebSession $adminSession | Out-Null
+    } catch { }
+}
+
+# ========================================
 # Edge Cases and Special Scenarios
 # ========================================
 
@@ -656,7 +853,7 @@ try {
     Write-Host "  Cleanup skipped (no products to clean)" -ForegroundColor DarkGray
 }
 
-# Test 35: Create Product with Multiple Categories
+# Test 39: Create Product with Multiple Categories
 Write-TestCase "POST /api/products - Product with multiple categories"
 try {
     $categories = Invoke-RestMethod -Uri "$BaseUrl/api/categories" -Method Get
@@ -689,7 +886,7 @@ catch {
     Write-Failure "Multi-category product test" $_.Exception.Message
 }
 
-# Test 36: Create Product with Zero Stock
+# Test 40: Create Product with Zero Stock
 Write-TestCase "POST /api/products - Product with zero stock"
 $uniqueId = [guid]::NewGuid().ToString().Substring(0, 8)
 $zeroStockBody = @{
@@ -713,7 +910,7 @@ if ($zeroStockProduct) {
         -Method Delete -WebSession $adminSession | Out-Null
 }
 
-# Test 37: Create Product with Same Attribute Multiple Times (Should handle gracefully)
+# Test 41: Create Product with Same Attribute Multiple Times (Should handle gracefully)
 Write-TestCase "POST /api/products - Duplicate attribute handling"
 $uniqueId = [guid]::NewGuid().ToString().Substring(0, 8)
 $dupAttrBody = @{
@@ -745,7 +942,7 @@ if ($dupAttrProduct) {
         -Method Delete -WebSession $adminSession | Out-Null
 }
 
-# Test 38: Pagination Edge Cases
+# Test 42: Pagination Edge Cases
 Write-TestCase "GET /api/products/paginated - Large page size"
 Invoke-ApiRequest -Method Get -Uri "$BaseUrl/api/products/paginated?page=0&size=1000" `
     -ExpectedStatusCode 200 -TestName "Get products with large page size"

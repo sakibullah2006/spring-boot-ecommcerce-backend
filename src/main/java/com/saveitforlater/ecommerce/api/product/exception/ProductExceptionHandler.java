@@ -3,6 +3,7 @@ package com.saveitforlater.ecommerce.api.product.exception;
 import com.saveitforlater.ecommerce.api.auth.exception.ErrorResponse;
 import com.saveitforlater.ecommerce.domain.product.exception.ProductNotFoundException;
 import com.saveitforlater.ecommerce.domain.product.exception.ProductSkuAlreadyExistsException;
+import com.saveitforlater.ecommerce.domain.product.exception.ProductSlugAlreadyExistsException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,20 @@ public class ProductExceptionHandler {
 
         ErrorResponse errorResponse = new ErrorResponse(
                 "PRODUCT_SKU_ALREADY_EXISTS",
+                ex.getMessage(),
+                HttpStatus.CONFLICT.value(),
+                "/api/products"
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(ProductSlugAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleProductSlugAlreadyExists(ProductSlugAlreadyExistsException ex) {
+        log.warn("Product slug already exists: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                "PRODUCT_SLUG_ALREADY_EXISTS",
                 ex.getMessage(),
                 HttpStatus.CONFLICT.value(),
                 "/api/products"
