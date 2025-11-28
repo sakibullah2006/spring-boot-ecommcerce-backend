@@ -3,11 +3,10 @@ package com.saveitforlater.ecommerce.api.product.dto;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 // Response DTO
 public record ProductResponse(
-        UUID id,
+        String id,
         String sku,
         String name,
         String description,
@@ -15,9 +14,9 @@ public record ProductResponse(
         BigDecimal salePrice,
         int stockQuantity,
         Set<CategorySummary> categories,
-        List<ProductAttributeDto> attributes
+        List<ProductAttributeValueDto> attributes
 ) {
     // Nested DTO
-    public record CategorySummary(UUID id, String name, UUID parentId) {}
+    public record CategorySummary(String id, String name, String parentId) {}
 }
 

@@ -5,7 +5,7 @@ public class CategoryNotFoundException extends RuntimeException {
         super(message);
     }
 
-    public static CategoryNotFoundException byPublicId(java.util.UUID publicId) {
+    public static CategoryNotFoundException byPublicId(String publicId) {
         return new CategoryNotFoundException("Category not found with ID: " + publicId);
     }
 

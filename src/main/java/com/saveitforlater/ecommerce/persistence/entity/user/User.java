@@ -26,8 +26,8 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, updatable = false)
-    private UUID publicId;
+    @Column(nullable = false, unique = true, updatable = false, length = 36)
+    private String publicId;
 
     @Column(nullable = false)
     private String firstName;
@@ -46,11 +46,11 @@ public class User implements UserDetails {
     private Role role;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
     // --- UserDetails Implementation ---
@@ -117,7 +117,7 @@ public class User implements UserDetails {
     @PrePersist
     public void prePersist() {
         if (this.publicId == null) {
-            this.publicId = UUID.randomUUID();
+            this.publicId = UUID.randomUUID().toString();
         }
     }
 }

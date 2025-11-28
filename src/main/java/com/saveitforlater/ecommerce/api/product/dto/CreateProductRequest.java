@@ -8,7 +8,6 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 // Request DTO
 public record CreateProductRequest(
@@ -34,7 +33,7 @@ public record CreateProductRequest(
         Integer stockQuantity,
 
         @NotNull
-        Set<UUID> categoryIds,
+        Set<String> categoryIds,
 
         List<ProductAttributeDto> attributes
 ) {}

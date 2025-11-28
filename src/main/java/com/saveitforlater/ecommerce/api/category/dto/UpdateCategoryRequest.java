@@ -2,7 +2,6 @@ package com.saveitforlater.ecommerce.api.category.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import java.util.UUID;
 
 // Request DTO for updating a category
 public record UpdateCategoryRequest(
@@ -12,6 +11,6 @@ public record UpdateCategoryRequest(
 
         String description,
 
-        UUID parentId // Public ID of the parent (can be null)
+        String parentId // Public ID of the parent (can be null)
 ) {}
 

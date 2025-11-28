@@ -5,7 +5,7 @@ public class ProductNotFoundException extends RuntimeException {
         super(message);
     }
 
-    public static ProductNotFoundException byPublicId(java.util.UUID publicId) {
+    public static ProductNotFoundException byPublicId(String publicId) {
         return new ProductNotFoundException("Product not found with ID: " + publicId);
     }
 

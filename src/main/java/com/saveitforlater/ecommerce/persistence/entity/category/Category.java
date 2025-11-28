@@ -24,8 +24,8 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, updatable = false)
-    private UUID publicId;
+    @Column(nullable = false, unique = true, updatable = false, length = 36)
+    private String publicId;
 
     @Column(nullable = false, unique = true)
     private String name;
@@ -47,11 +47,11 @@ public class Category {
     private Set<Product> products = new HashSet<>();
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
     /**
@@ -61,7 +61,7 @@ public class Category {
     @PrePersist
     public void prePersist() {
         if (this.publicId == null) {
-            this.publicId = UUID.randomUUID();
+            this.publicId = UUID.randomUUID().toString();
         }
     }
 }

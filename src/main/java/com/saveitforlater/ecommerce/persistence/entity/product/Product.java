@@ -29,8 +29,8 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, updatable = false)
-    private UUID publicId;
+    @Column(nullable = false, unique = true, updatable = false, length = 36)
+    private String publicId;
 
     @Column(nullable = false, unique = true)
     private String sku;
@@ -60,34 +60,44 @@ public class Product {
     )
     private Set<Category> categories = new HashSet<>();
 
-    // Optional product attributes like size and color
+    // Product attributes using the new reusable system
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProductAttribute> attributes = new ArrayList<>();
+    private List<ProductAttributeValue> attributeValues = new ArrayList<>();
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
 
     @PrePersist
     public void prePersist() {
         if (this.publicId == null) {
-            this.publicId = UUID.randomUUID();
+            this.publicId = UUID.randomUUID().toString();
         }
     }
 
-    // Helper methods for managing attributes
-    public void addAttribute(ProductAttribute attribute) {
-        attributes.add(attribute);
-        attribute.setProduct(this);
+    // Helper methods for managing attribute values
+    public void addAttributeValue(ProductAttributeValue attributeValue) {
+        attributeValues.add(attributeValue);
+        attributeValue.setProduct(this);
     }
 
-    public void removeAttribute(ProductAttribute attribute) {
-        attributes.remove(attribute);
-        attribute.setProduct(null);
+    public void removeAttributeValue(ProductAttributeValue attributeValue) {
+        attributeValues.remove(attributeValue);
+        attributeValue.setProduct(null);
+    }
+
+    public void addAttributeValue(Attribute attribute, AttributeOption option) {
+        ProductAttributeValue attributeValue = new ProductAttributeValue(this, attribute, option);
+        addAttributeValue(attributeValue);
+    }
+
+    public void removeAttributeValue(Attribute attribute, AttributeOption option) {
+        attributeValues.removeIf(av -> 
+            av.getAttribute().equals(attribute) && av.getAttributeOption().equals(option));
     }
 }

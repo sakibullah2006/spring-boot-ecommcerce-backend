@@ -1,3 +1,6 @@
+server:
+    port: 8080
+
 spring:
     application:
         name: ecommerce
@@ -19,9 +22,8 @@ spring:
     jpa:
         show-sql: true
         hibernate:
-            # 'validate' is the correct, safe setting when using Flyway.
-            # 'update' is dangerous in production and conflicts with Flyway.
-            ddl-auto: create-drop
+            # Temporarily set to 'none' to allow startup and check for schema issues
+            ddl-auto: none
             # naming:
             #     physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
         properties:
@@ -31,7 +33,7 @@ spring:
                 dialect: org.hibernate.dialect.MySQLDialect
 
     flyway:
-        enabled: false
+        enabled: true
         # Tell Flyway to use the same externalized properties as the main data source
         url: ${spring.datasource.url}
         user: ${spring.datasource.username}
@@ -46,5 +48,11 @@ app:
     frontend:
         origin: http://localhost:3000
 
-server:
-    port: 8080
+# ===================================================================
+# LOGGING CONFIGURATION
+# ===================================================================
+logging:
+  level:
+    org.flywaydb: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

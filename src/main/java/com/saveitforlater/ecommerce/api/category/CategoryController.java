@@ -16,7 +16,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -51,7 +50,7 @@ public class CategoryController {
      * Get category by ID - accessible to everyone
      */
     @GetMapping("/{id}")
-    public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable UUID id) {
+    public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable String id) {
         log.debug("GET /api/categories/{} - Fetching category by ID", id);
         CategoryResponse category = categoryService.getCategoryById(id);
         return ResponseEntity.ok(category);
@@ -85,7 +84,7 @@ public class CategoryController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<CategoryResponse> updateCategory(
-            @PathVariable UUID id,
+            @PathVariable String id,
             @Valid @RequestBody UpdateCategoryRequest request) {
         log.info("PUT /api/categories/{} - Updating category with new data", id);
         CategoryResponse updatedCategory = categoryService.updateCategory(id, request);
@@ -97,7 +96,7 @@ public class CategoryController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Void> deleteCategory(@PathVariable UUID id) {
+    public ResponseEntity<Void> deleteCategory(@PathVariable String id) {
         log.info("DELETE /api/categories/{} - Deleting category", id);
         categoryService.deleteCategory(id);
         return ResponseEntity.noContent().build();

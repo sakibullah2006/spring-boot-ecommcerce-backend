@@ -9,9 +9,7 @@ import com.saveitforlater.ecommerce.domain.category.exception.CategoryNotFoundEx
 import com.saveitforlater.ecommerce.domain.product.exception.ProductNotFoundException;
 import com.saveitforlater.ecommerce.domain.product.exception.ProductSkuAlreadyExistsException;
 import com.saveitforlater.ecommerce.persistence.entity.category.Category;
-import com.saveitforlater.ecommerce.persistence.entity.product.AttributeOption;
-import com.saveitforlater.ecommerce.persistence.entity.product.Product;
-import com.saveitforlater.ecommerce.persistence.entity.product.ProductAttribute;
+import com.saveitforlater.ecommerce.persistence.entity.product.*;
 import com.saveitforlater.ecommerce.persistence.repository.category.CategoryRepository;
 import com.saveitforlater.ecommerce.persistence.repository.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +18,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -36,6 +34,9 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductMapper productMapper;
+    private final AttributeService attributeService;
+    private final AttributeOptionService attributeOptionService;
+    private final ProductAttributeValueService productAttributeValueService;
 
     /**
      * Get all products (accessible to everyone)
@@ -60,7 +61,7 @@ public class ProductService {
     /**
      * Get product by public ID (accessible to everyone)
      */
-    public ProductResponse getProductById(UUID publicId) {
+    public ProductResponse getProductById(String publicId) {
         log.debug("Fetching product by ID: {}", publicId);
         Product product = productRepository.findByPublicId(publicId)
                 .orElseThrow(() -> ProductNotFoundException.byPublicId(publicId));
@@ -97,7 +98,7 @@ public class ProductService {
         // Set categories if provided
         if (request.categoryIds() != null && !request.categoryIds().isEmpty()) {
             Set<Category> categories = new HashSet<>();
-            for (UUID categoryId : request.categoryIds()) {
+            for (String categoryId : request.categoryIds()) {
                 Category category = categoryRepository.findByPublicId(categoryId)
                         .orElseThrow(() -> CategoryNotFoundException.byPublicId(categoryId));
                 categories.add(category);
@@ -109,38 +110,32 @@ public class ProductService {
         // Set attributes if provided
         if (request.attributes() != null && !request.attributes().isEmpty()) {
             for (ProductAttributeDto attrDto : request.attributes()) {
-                ProductAttribute attribute = new ProductAttribute();
-                attribute.setName(attrDto.name());
-                attribute.setSlug(attrDto.slug());
-
-                // Add options to attribute
-                if (attrDto.options() != null) {
-                    for (ProductAttributeDto.AttributeOptionDto optionDto : attrDto.options()) {
-                        AttributeOption option = new AttributeOption();
-                        option.setName(optionDto.name());
-                        option.setSlug(optionDto.slug());
-                        attribute.addOption(option);
-                    }
-                }
-
-                product.addAttribute(attribute);
+                processProductAttribute(product, attrDto);
             }
             log.debug("Set {} attributes for new product: {}", request.attributes().size(), request.name());
         }
 
-        // Save product
-        Product savedProduct = productRepository.save(product);
-        log.info("Successfully created product with ID: {} and SKU: {}",
-                savedProduct.getPublicId(), savedProduct.getSku());
-
-        return productMapper.toProductResponse(savedProduct);
+        // Save product with duplicate SKU handling
+        try {
+            Product savedProduct = productRepository.save(product);
+            log.info("Successfully created product with ID: {} and SKU: {}",
+                    savedProduct.getPublicId(), savedProduct.getSku());
+            return productMapper.toProductResponse(savedProduct);
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            // Handle race condition where SKU was checked but inserted by another transaction
+            if (ex.getMessage() != null && ex.getMessage().contains("sku")) {
+                log.warn("Race condition detected: SKU {} was inserted by another transaction", request.sku());
+                throw ProductSkuAlreadyExistsException.withSku(request.sku());
+            }
+            throw ex; // Re-throw other integrity violations
+        }
     }
 
     /**
      * Update an existing product (ADMIN ONLY)
      */
     @Transactional
-    public ProductResponse updateProduct(UUID publicId, UpdateProductRequest request) {
+    public ProductResponse updateProduct(String publicId, UpdateProductRequest request) {
         log.info("Updating product with ID: {}", publicId);
 
         // Find existing product
@@ -160,7 +155,7 @@ public class ProductService {
         // Update categories if provided
         if (request.categoryIds() != null) {
             Set<Category> categories = new HashSet<>();
-            for (UUID categoryId : request.categoryIds()) {
+            for (String categoryId : request.categoryIds()) {
                 Category category = categoryRepository.findByPublicId(categoryId)
                         .orElseThrow(() -> CategoryNotFoundException.byPublicId(categoryId));
                 categories.add(category);
@@ -173,26 +168,12 @@ public class ProductService {
 
         // Update attributes if provided
         if (request.attributes() != null) {
-            // Clear existing attributes
-            existingProduct.getAttributes().clear();
+            // Clear existing attribute values
+            productAttributeValueService.clearAllAttributeValuesForProduct(existingProduct);
 
             // Add new attributes
             for (ProductAttributeDto attrDto : request.attributes()) {
-                ProductAttribute attribute = new ProductAttribute();
-                attribute.setName(attrDto.name());
-                attribute.setSlug(attrDto.slug());
-
-                // Add options to attribute
-                if (attrDto.options() != null) {
-                    for (ProductAttributeDto.AttributeOptionDto optionDto : attrDto.options()) {
-                        AttributeOption option = new AttributeOption();
-                        option.setName(optionDto.name());
-                        option.setSlug(optionDto.slug());
-                        attribute.addOption(option);
-                    }
-                }
-
-                existingProduct.addAttribute(attribute);
+                processProductAttribute(existingProduct, attrDto);
             }
             log.debug("Updated attributes for product: {}", existingProduct.getName());
         }
@@ -208,7 +189,7 @@ public class ProductService {
      * Delete a product (ADMIN ONLY)
      */
     @Transactional
-    public void deleteProduct(UUID publicId) {
+    public void deleteProduct(String publicId) {
         log.info("Deleting product with ID: {}", publicId);
 
         Product product = productRepository.findByPublicId(publicId)
@@ -220,6 +201,60 @@ public class ProductService {
 
         productRepository.delete(product);
         log.info("Successfully deleted product with ID: {}", publicId);
+    }
+
+    /**
+     * Helper method to process product attributes using the new reusable system
+     */
+    private void processProductAttribute(Product product, ProductAttributeDto attrDto) {
+        Attribute attribute;
+        
+        // Get or create attribute
+        if (attrDto.attributeId() != null) {
+            // Use existing attribute
+            attribute = attributeService.findByPublicId(attrDto.attributeId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Attribute not found with ID: " + attrDto.attributeId()));
+        } else if (StringUtils.hasText(attrDto.attributeName())) {
+            // Create or get attribute by name
+            attribute = attributeService.createOrGetAttribute(
+                    attrDto.attributeName(), attrDto.attributeDescription());
+        } else {
+            throw new IllegalArgumentException(
+                    "Either attributeId or attributeName must be provided");
+        }
+
+        // Process attribute options
+        if (attrDto.options() != null && !attrDto.options().isEmpty()) {
+            for (ProductAttributeDto.ProductAttributeOptionDto optionDto : attrDto.options()) {
+                AttributeOption option;
+                
+                if (optionDto.optionId() != null) {
+                    // Use existing option
+                    option = attributeOptionService.findByPublicId(optionDto.optionId())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Attribute option not found with ID: " + optionDto.optionId()));
+                    
+                    // Verify the option belongs to the correct attribute
+                    if (!option.getAttribute().equals(attribute)) {
+                        throw new IllegalArgumentException(
+                                "Option " + optionDto.optionId() + " does not belong to attribute " 
+                                + attribute.getPublicId());
+                    }
+                } else if (StringUtils.hasText(optionDto.optionName())) {
+                    // Create or get option by name
+                    option = attributeOptionService.createOrGetOption(
+                            attribute, optionDto.optionName(), optionDto.optionDescription());
+                } else {
+                    throw new IllegalArgumentException(
+                            "Either optionId or optionName must be provided");
+                }
+
+                // Add the attribute value to the product directly (don't save yet - let cascade handle it)
+                ProductAttributeValue attributeValue = new ProductAttributeValue(product, attribute, option);
+                product.addAttributeValue(attributeValue);
+            }
+        }
     }
 }
 

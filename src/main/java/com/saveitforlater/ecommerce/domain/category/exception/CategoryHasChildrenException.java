@@ -5,7 +5,7 @@ public class CategoryHasChildrenException extends RuntimeException {
         super(message);
     }
 
-    public static CategoryHasChildrenException withId(java.util.UUID publicId) {
+    public static CategoryHasChildrenException withId(String publicId) {
         return new CategoryHasChildrenException("Cannot delete category " + publicId + " because it has child categories");
     }
 }

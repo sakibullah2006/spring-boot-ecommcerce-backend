@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -52,7 +51,7 @@ public class CategoryService {
     /**
      * Get category by public ID (accessible to everyone)
      */
-    public CategoryResponse getCategoryById(UUID publicId) {
+    public CategoryResponse getCategoryById(String publicId) {
         log.debug("Fetching category by ID: {}", publicId);
         Category category = categoryRepository.findByPublicId(publicId)
                 .orElseThrow(() -> CategoryNotFoundException.byPublicId(publicId));
@@ -106,7 +105,7 @@ public class CategoryService {
      * Update an existing category (ADMIN ONLY)
      */
     @Transactional
-    public CategoryResponse updateCategory(UUID publicId, UpdateCategoryRequest request) {
+    public CategoryResponse updateCategory(String publicId, UpdateCategoryRequest request) {
         log.info("Updating category with ID: {}", publicId);
 
         // Find existing category
@@ -156,7 +155,7 @@ public class CategoryService {
      * Delete a category (ADMIN ONLY)
      */
     @Transactional
-    public void deleteCategory(UUID publicId) {
+    public void deleteCategory(String publicId) {
         log.info("Deleting category with ID: {}", publicId);
 
         Category category = categoryRepository.findByPublicId(publicId)

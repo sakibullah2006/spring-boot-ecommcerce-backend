@@ -16,7 +16,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -51,7 +50,7 @@ public class ProductController {
      * Get product by ID - accessible to everyone
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ProductResponse> getProductById(@PathVariable UUID id) {
+    public ResponseEntity<ProductResponse> getProductById(@PathVariable String id) {
         log.debug("GET /api/products/{} - Fetching product by ID", id);
         ProductResponse product = productService.getProductById(id);
         return ResponseEntity.ok(product);
@@ -85,7 +84,7 @@ public class ProductController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ProductResponse> updateProduct(
-            @PathVariable UUID id,
+            @PathVariable String id,
             @Valid @RequestBody UpdateProductRequest request) {
         log.info("PUT /api/products/{} - Updating product with new data", id);
         ProductResponse updatedProduct = productService.updateProduct(id, request);
@@ -97,7 +96,7 @@ public class ProductController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<Void> deleteProduct(@PathVariable UUID id) {
+    public ResponseEntity<Void> deleteProduct(@PathVariable String id) {
         log.info("DELETE /api/products/{} - Deleting product", id);
         productService.deleteProduct(id);
         return ResponseEntity.noContent().build();

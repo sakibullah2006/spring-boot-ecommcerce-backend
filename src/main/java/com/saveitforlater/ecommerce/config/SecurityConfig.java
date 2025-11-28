@@ -89,7 +89,7 @@ public class SecurityConfig {
         http.authorizeHttpRequests(authz -> authz
                 // Public endpoints - allow anonymous access
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**", "/api/attributes/**").permitAll()
                 .requestMatchers("/api/auth/debug/**").permitAll() // Debug endpoints (remove in production)
                 .requestMatchers("/error").permitAll() // Spring Boot error endpoint
                 .requestMatchers("/actuator/health").permitAll() // Health check endpoint
