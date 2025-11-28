@@ -133,6 +133,7 @@ public class ProductService {
 
     /**
      * Update an existing product (ADMIN ONLY)
+     * Supports partial updates - only updates fields that are provided (not null)
      */
     @Transactional
     public ProductResponse updateProduct(String publicId, UpdateProductRequest request) {
@@ -143,17 +144,44 @@ public class ProductService {
                 .orElseThrow(() -> ProductNotFoundException.byPublicId(publicId));
 
         // Check if new SKU conflicts with existing products (excluding current product)
-        productRepository.findBySku(request.sku())
-                .filter(product -> !product.getPublicId().equals(publicId))
-                .ifPresent(product -> {
-                    throw ProductSkuAlreadyExistsException.withSku(request.sku());
-                });
+        if (request.sku() != null && !request.sku().equals(existingProduct.getSku())) {
+            productRepository.findBySku(request.sku())
+                    .filter(product -> !product.getPublicId().equals(publicId))
+                    .ifPresent(product -> {
+                        throw ProductSkuAlreadyExistsException.withSku(request.sku());
+                    });
+            existingProduct.setSku(request.sku());
+            log.debug("Updated SKU for product: {}", publicId);
+        }
 
-        // Update basic fields
-        productMapper.updateProductFromRequest(request, existingProduct);
+        // Update basic fields only if provided
+        if (request.name() != null) {
+            existingProduct.setName(request.name());
+            log.debug("Updated name for product: {}", publicId);
+        }
+        
+        if (request.description() != null) {
+            existingProduct.setDescription(request.description());
+            log.debug("Updated description for product: {}", publicId);
+        }
+        
+        if (request.price() != null) {
+            existingProduct.setPrice(request.price());
+            log.debug("Updated price for product: {}", publicId);
+        }
+        
+        if (request.salePrice() != null) {
+            existingProduct.setSalePrice(request.salePrice());
+            log.debug("Updated sale price for product: {}", publicId);
+        }
+        
+        if (request.stockQuantity() != null) {
+            existingProduct.setStockQuantity(request.stockQuantity());
+            log.debug("Updated stock quantity for product: {}", publicId);
+        }
 
         // Update categories if provided
-        if (request.categoryIds() != null) {
+        if (request.categoryIds() != null && !request.categoryIds().isEmpty()) {
             Set<Category> categories = new HashSet<>();
             for (String categoryId : request.categoryIds()) {
                 Category category = categoryRepository.findByPublicId(categoryId)
@@ -172,8 +200,10 @@ public class ProductService {
             productAttributeValueService.clearAllAttributeValuesForProduct(existingProduct);
 
             // Add new attributes
-            for (ProductAttributeDto attrDto : request.attributes()) {
-                processProductAttribute(existingProduct, attrDto);
+            if (!request.attributes().isEmpty()) {
+                for (ProductAttributeDto attrDto : request.attributes()) {
+                    processProductAttribute(existingProduct, attrDto);
+                }
             }
             log.debug("Updated attributes for product: {}", existingProduct.getName());
         }

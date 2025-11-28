@@ -8,6 +8,7 @@ import com.saveitforlater.ecommerce.domain.product.AttributeService;
 import com.saveitforlater.ecommerce.persistence.entity.product.Attribute;
 import com.saveitforlater.ecommerce.persistence.entity.product.AttributeOption;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -69,7 +70,8 @@ public class AttributeController {
     public ResponseEntity<AttributeDto> updateAttribute(@PathVariable String attributeId,
                                                        @Valid @RequestBody UpdateAttributeRequest request) {
         Attribute attribute = attributeService.updateAttribute(
-                attributeId, request.name(), request.description(), request.isActive());
+                attributeId, request.name(), request.description(), 
+                request.isActive() != null ? request.isActive() : true);
         AttributeDto response = productMapper.toAttributeDto(attribute);
         return ResponseEntity.ok(response);
     }
@@ -142,9 +144,10 @@ public class AttributeController {
     ) {}
 
     public record UpdateAttributeRequest(
+            @NotBlank(message = "Name is required")
             String name,
             String description,
-            boolean isActive
+            Boolean isActive
     ) {}
 
     public record CreateAttributeOptionRequest(

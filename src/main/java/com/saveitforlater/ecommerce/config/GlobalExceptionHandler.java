@@ -105,6 +105,29 @@ public class GlobalExceptionHandler {
     }
 
     // ============================================
+    // ILLEGAL ARGUMENT EXCEPTIONS
+    // ============================================
+    
+    /**
+     * Handle IllegalArgumentException - typically from invalid IDs or parameters
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+            IllegalArgumentException ex,
+            HttpServletRequest request) {
+        
+        ErrorResponse errorResponse = new ErrorResponse(
+            "INVALID_ARGUMENT",
+            ex.getMessage(),
+            HttpStatus.BAD_REQUEST.value(),
+            request.getRequestURI()
+        );
+
+        log.warn("Illegal argument on {}: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    // ============================================
     // DATABASE CONSTRAINT VIOLATIONS
     // ============================================
     
