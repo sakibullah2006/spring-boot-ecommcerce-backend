@@ -55,7 +55,7 @@ public class AttributeController {
      * Create a new attribute (ADMIN ONLY)
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<AttributeDto> createAttribute(@Valid @RequestBody CreateAttributeRequest request) {
         Attribute attribute = attributeService.createOrGetAttribute(request.name(), request.description());
         AttributeDto response = productMapper.toAttributeDto(attribute);
@@ -66,7 +66,7 @@ public class AttributeController {
      * Update an attribute (ADMIN ONLY)
      */
     @PutMapping("/{attributeId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<AttributeDto> updateAttribute(@PathVariable String attributeId,
                                                        @Valid @RequestBody UpdateAttributeRequest request) {
         Attribute attribute = attributeService.updateAttribute(
@@ -80,7 +80,7 @@ public class AttributeController {
      * Deactivate an attribute (ADMIN ONLY)
      */
     @DeleteMapping("/{attributeId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Void> deactivateAttribute(@PathVariable String attributeId) {
         attributeService.deactivateAttribute(attributeId);
         return ResponseEntity.noContent().build();
@@ -102,7 +102,7 @@ public class AttributeController {
      * Create a new option for an attribute (ADMIN ONLY)
      */
     @PostMapping("/{attributeId}/options")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<AttributeOptionDto> createAttributeOption(@PathVariable String attributeId,
                                                                     @Valid @RequestBody CreateAttributeOptionRequest request) {
         Attribute attribute = attributeService.findByPublicId(attributeId)
@@ -118,7 +118,7 @@ public class AttributeController {
      * Update an attribute option (ADMIN ONLY)
      */
     @PutMapping("/options/{optionId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<AttributeOptionDto> updateAttributeOption(@PathVariable String optionId,
                                                                     @Valid @RequestBody UpdateAttributeOptionRequest request) {
         AttributeOption option = attributeOptionService.updateOption(
@@ -131,7 +131,7 @@ public class AttributeController {
      * Deactivate an attribute option (ADMIN ONLY)
      */
     @DeleteMapping("/options/{optionId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Void> deactivateAttributeOption(@PathVariable String optionId) {
         attributeOptionService.deactivateOption(optionId);
         return ResponseEntity.noContent().build();

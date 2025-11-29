@@ -31,7 +31,7 @@ public class FileController {
      * Upload image for a product - ADMIN ONLY
      */
     @PostMapping("/products/{productPublicId}/images")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ProductImageResponse> uploadProductImage(
             @PathVariable String productPublicId,
             @RequestParam("file") MultipartFile file,
@@ -108,7 +108,7 @@ public class FileController {
      * Update product image metadata - ADMIN ONLY
      */
     @PatchMapping("/images/{imagePublicId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ProductImageResponse> updateProductImage(
             @PathVariable String imagePublicId,
             @Valid @RequestBody UpdateProductImageRequest request) {
@@ -123,7 +123,7 @@ public class FileController {
      * Delete a product image - ADMIN ONLY
      */
     @DeleteMapping("/images/{imagePublicId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Void> deleteProductImage(@PathVariable String imagePublicId) {
         log.info("DELETE /api/files/images/{} - Deleting product image", imagePublicId);
         
@@ -135,7 +135,7 @@ public class FileController {
      * Delete all images for a product - ADMIN ONLY
      */
     @DeleteMapping("/products/{productPublicId}/images")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Void> deleteAllProductImages(@PathVariable String productPublicId) {
         log.info("DELETE /api/files/products/{}/images - Deleting all product images", productPublicId);
         
