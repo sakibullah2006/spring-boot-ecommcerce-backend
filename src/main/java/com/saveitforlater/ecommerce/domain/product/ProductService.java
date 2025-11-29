@@ -6,6 +6,7 @@ import com.saveitforlater.ecommerce.api.product.dto.ProductResponse;
 import com.saveitforlater.ecommerce.api.product.dto.UpdateProductRequest;
 import com.saveitforlater.ecommerce.api.product.mapper.ProductMapper;
 import com.saveitforlater.ecommerce.domain.category.exception.CategoryNotFoundException;
+import com.saveitforlater.ecommerce.domain.file.ProductImageService;
 import com.saveitforlater.ecommerce.domain.product.exception.ProductNotFoundException;
 import com.saveitforlater.ecommerce.domain.product.exception.ProductSkuAlreadyExistsException;
 import com.saveitforlater.ecommerce.domain.product.exception.ProductSlugAlreadyExistsException;
@@ -25,6 +26,7 @@ import org.springframework.util.StringUtils;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -39,6 +41,7 @@ public class ProductService {
     private final AttributeService attributeService;
     private final AttributeOptionService attributeOptionService;
     private final ProductAttributeValueService productAttributeValueService;
+    private final ProductImageService productImageService;
 
     /**
      * Get all products (accessible to everyone)
@@ -47,7 +50,7 @@ public class ProductService {
         log.debug("Fetching all products");
         return productRepository.findAll()
                 .stream()
-                .map(productMapper::toProductResponse)
+                .map(this::toProductResponseWithImages)
                 .collect(Collectors.toList());
     }
 
@@ -57,7 +60,7 @@ public class ProductService {
     public Page<ProductResponse> getProducts(Pageable pageable) {
         log.debug("Fetching products with pagination: {}", pageable);
         return productRepository.findAll(pageable)
-                .map(productMapper::toProductResponse);
+                .map(this::toProductResponseWithImages);
     }
 
     /**
@@ -68,7 +71,7 @@ public class ProductService {
         Product product = productRepository.findByPublicId(publicId)
                 .orElseThrow(() -> ProductNotFoundException.byPublicId(publicId));
 
-        return productMapper.toProductResponse(product);
+        return toProductResponseWithImages(product);
     }
 
     /**
@@ -79,7 +82,7 @@ public class ProductService {
         Product product = productRepository.findBySku(sku)
                 .orElseThrow(() -> ProductNotFoundException.bySku(sku));
 
-        return productMapper.toProductResponse(product);
+        return toProductResponseWithImages(product);
     }
 
     /**
@@ -242,7 +245,7 @@ public class ProductService {
         Product updatedProduct = productRepository.save(existingProduct);
         log.info("Successfully updated product with ID: {}", updatedProduct.getPublicId());
 
-        return productMapper.toProductResponse(updatedProduct);
+        return toProductResponseWithImages(updatedProduct);
     }
 
     /**
@@ -315,6 +318,29 @@ public class ProductService {
                 product.addAttributeValue(attributeValue);
             }
         }
+    }
+    
+    /**
+     * Convert Product entity to ProductResponse with actual images.
+     * Fetches images from database via ProductImageService.
+     */
+    private ProductResponse toProductResponseWithImages(Product product) {
+        ProductResponse response = productMapper.toProductResponse(product);
+        // Fetch actual images for this product
+        var images = productImageService.getProductImages(product.getPublicId());
+        return new ProductResponse(
+            response.id(),
+            response.sku(),
+            response.name(),
+            response.slug(),
+            response.description(),
+            response.price(),
+            response.salePrice(),
+            response.stockQuantity(),
+            response.categories(),
+            response.attributes(),
+            images  // Actual images from database
+        );
     }
 }
 

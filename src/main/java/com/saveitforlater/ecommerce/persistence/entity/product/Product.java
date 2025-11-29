@@ -3,6 +3,7 @@ package com.saveitforlater.ecommerce.persistence.entity.product;
 
 
 import com.saveitforlater.ecommerce.persistence.entity.category.Category;
+import com.saveitforlater.ecommerce.persistence.entity.file.ProductImage;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -66,6 +67,10 @@ public class Product {
     // Product attributes using the new reusable system
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductAttributeValue> attributeValues = new ArrayList<>();
+
+    // Product images
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductImage> images = new ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

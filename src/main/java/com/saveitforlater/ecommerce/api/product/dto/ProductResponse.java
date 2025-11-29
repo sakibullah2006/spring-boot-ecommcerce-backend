@@ -1,5 +1,7 @@
 package com.saveitforlater.ecommerce.api.product.dto;
 
+import com.saveitforlater.ecommerce.domain.file.dto.ProductImageResponse;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
@@ -15,7 +17,8 @@ public record ProductResponse(
         BigDecimal salePrice,
         int stockQuantity,
         Set<CategorySummary> categories,
-        List<ProductAttributeValueDto> attributes
+        List<ProductAttributeValueDto> attributes,
+        List<ProductImageResponse> images
 ) {
     // Nested DTO
     public record CategorySummary(String id, String name, String slug, String parentId) {}

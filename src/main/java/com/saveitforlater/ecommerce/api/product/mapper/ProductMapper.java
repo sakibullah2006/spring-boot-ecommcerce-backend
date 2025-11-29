@@ -12,6 +12,7 @@ public interface ProductMapper {
 
     @Mapping(source = "publicId", target = "id")
     @Mapping(source = "attributeValues", target = "attributes")
+    @Mapping(target = "images", ignore = true)  // Images are handled separately by ProductImageService
     ProductResponse toProductResponse(Product product);
 
     @Mapping(source = "publicId", target = "id")
@@ -37,6 +38,7 @@ public interface ProductMapper {
     @Mapping(target = "publicId", ignore = true)      // Public UUID - auto-generated on create
     @Mapping(target = "categories", ignore = true)    // Set manually in service using categoryIds (public IDs)
     @Mapping(target = "attributeValues", ignore = true)    // Set manually in service using new attribute system
+    @Mapping(target = "images", ignore = true)        // Images managed separately via FileController
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Product toProduct(CreateProductRequest request);
@@ -45,6 +47,7 @@ public interface ProductMapper {
     @Mapping(target = "publicId", ignore = true)      // Public UUID - preserves existing value
     @Mapping(target = "categories", ignore = true)    // Set manually in service using categoryIds (public IDs)
     @Mapping(target = "attributeValues", ignore = true)    // Set manually in service using new attribute system
+    @Mapping(target = "images", ignore = true)        // Images managed separately via FileController
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateProductFromRequest(UpdateProductRequest request, @MappingTarget Product product);

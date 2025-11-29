@@ -3,7 +3,9 @@ package com.saveitforlater.ecommerce.api.product;
 import com.saveitforlater.ecommerce.api.product.dto.CreateProductRequest;
 import com.saveitforlater.ecommerce.api.product.dto.ProductResponse;
 import com.saveitforlater.ecommerce.api.product.dto.UpdateProductRequest;
+import com.saveitforlater.ecommerce.domain.file.ProductImageService;
 import com.saveitforlater.ecommerce.domain.product.ProductService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,9 +13,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -24,6 +28,8 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
+    private final ProductImageService productImageService;
+    private final ObjectMapper objectMapper;
 
     /**
      * Get all products - accessible to everyone
@@ -76,6 +82,56 @@ public class ProductController {
         log.info("POST /api/products - Creating new product: {}", request.name());
         ProductResponse createdProduct = productService.createProduct(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
+    }
+
+    /**
+     * Create product with images - ADMIN ONLY
+     * Accepts multipart/form-data with product JSON and image files
+     */
+    @PostMapping(value = "/with-images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ProductResponse> createProductWithImages(
+            @RequestParam("product") String productJson,
+            @RequestParam(value = "images", required = false) List<MultipartFile> images,
+            @RequestParam(value = "primaryImageIndex", required = false, defaultValue = "0") int primaryImageIndex) {
+        
+        try {
+            log.info("POST /api/products/with-images - Creating new product with {} image(s)", 
+                    images != null ? images.size() : 0);
+            
+            // Parse product JSON
+            CreateProductRequest request = objectMapper.readValue(productJson, CreateProductRequest.class);
+            
+            // Create product
+            ProductResponse createdProduct = productService.createProduct(request);
+            
+            // Upload images if provided
+            if (images != null && !images.isEmpty()) {
+                for (int i = 0; i < images.size(); i++) {
+                    MultipartFile image = images.get(i);
+                    boolean isPrimary = (i == primaryImageIndex);
+                    int displayOrder = i;
+                    
+                    productImageService.uploadProductImage(
+                            createdProduct.id(),
+                            image,
+                            isPrimary,
+                            displayOrder,
+                            null // altText can be added later
+                    );
+                }
+                log.info("Successfully uploaded {} image(s) for product: {}", images.size(), createdProduct.id());
+                
+                // Fetch product again to get updated response with images
+                createdProduct = productService.getProductById(createdProduct.id());
+            }
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
+            
+        } catch (Exception e) {
+            log.error("Failed to create product with images: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to create product with images: " + e.getMessage(), e);
+        }
     }
 
     /**
