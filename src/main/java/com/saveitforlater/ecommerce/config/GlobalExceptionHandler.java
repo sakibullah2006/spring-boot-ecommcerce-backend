@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -125,6 +126,36 @@ public class GlobalExceptionHandler {
 
         log.warn("Illegal argument on {}: {}", request.getRequestURI(), ex.getMessage());
         return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    // ============================================
+    // HTTP METHOD NOT SUPPORTED
+    // ============================================
+    
+    /**
+     * Handle HTTP method not supported errors
+     * Returns 405 Method Not Allowed instead of generic 500 error
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupportedException(
+            HttpRequestMethodNotSupportedException ex,
+            HttpServletRequest request) {
+        
+        String supportedMethods = ex.getSupportedHttpMethods() != null 
+            ? String.join(", ", ex.getSupportedHttpMethods().stream().map(m -> m.name()).toList())
+            : "Unknown";
+        
+        ErrorResponse errorResponse = new ErrorResponse(
+            "METHOD_NOT_ALLOWED",
+            String.format("Method '%s' is not supported for this endpoint. Supported methods: %s", 
+                ex.getMethod(), supportedMethods),
+            HttpStatus.METHOD_NOT_ALLOWED.value(),
+            request.getRequestURI()
+        );
+
+        log.warn("Method not allowed on {}: {} (Supported: {})", 
+            request.getRequestURI(), ex.getMethod(), supportedMethods);
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(errorResponse);
     }
 
     // ============================================

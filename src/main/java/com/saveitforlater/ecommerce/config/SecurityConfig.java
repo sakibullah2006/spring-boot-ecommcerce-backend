@@ -12,6 +12,7 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.session.SessionRegistry;
@@ -28,6 +29,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -95,7 +97,7 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health").permitAll() // Health check endpoint
 
                 // Secure all other endpoints
-                .requestMatchers("/api/v1/users/me", "/api/v1/orders/**", "/api/v1/cart/**").authenticated()
+                .requestMatchers("/api/users/me", "/api/orders/**", "/api/cart/**").authenticated()
                 .requestMatchers("/api/auth/session").authenticated()
                 .requestMatchers("/actuator/**").hasRole("ADMIN") // Admin-only actuator endpoints
                 .anyRequest().authenticated()
