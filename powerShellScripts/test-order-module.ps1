@@ -26,15 +26,8 @@ $script:userEmail = $null
 $script:cartId = $null
 $script:orderIds = @()
 
-# Product IDs from your data
-$products = @{
-    iPhone = "f5a2ea2f-ccb4-11f0-aa56-00e04c816b21"
-    Samsung = "f5a2fbb9-ccb4-11f0-aa56-00e04c816b21"
-    MacBook = "f5a307bc-ccb4-11f0-aa56-00e04c816b21"
-    iPad = "f5a31956-ccb4-11f0-aa56-00e04c816b21"
-    NikeTShirt = "f5a35088-ccb4-11f0-aa56-00e04c816b21"
-    AdidasHoodie = "f5a352c4-ccb4-11f0-aa56-00e04c816b21"
-}
+# Product IDs will be fetched from the API
+$products = @{}
 
 # ================================================================
 # Helper Functions
@@ -214,11 +207,62 @@ function Initialize-TestUser {
 # Cart Setup Functions
 # ================================================================
 
+function Fetch-ProductIds {
+    Write-TestStep "Fetching product IDs from API"
+    
+    $response = Invoke-ApiRequest -method "GET" -endpoint "/products/paginated?page=0&size=20"
+    
+    if ($response.StatusCode -eq 200 -and $response.Content.content) {
+        foreach ($product in $response.Content.content) {
+            if ($product.name -like "*iPhone 15*") {
+                $script:products.iPhone = $product.id
+                Write-Info "Found iPhone: $($product.id)"
+            }
+            elseif ($product.name -like "*Samsung Galaxy S24*") {
+                $script:products.Samsung = $product.id
+                Write-Info "Found Samsung: $($product.id)"
+            }
+            elseif ($product.name -like "*MacBook Pro*") {
+                $script:products.MacBook = $product.id
+                Write-Info "Found MacBook: $($product.id)"
+            }
+            elseif ($product.name -like "*iPad Air*") {
+                $script:products.iPad = $product.id
+                Write-Info "Found iPad: $($product.id)"
+            }
+            elseif ($product.name -like "*Nike*T-Shirt*" -or $product.name -like "*Nike*Shirt*") {
+                $script:products.NikeTShirt = $product.id
+                Write-Info "Found Nike T-Shirt: $($product.id)"
+            }
+            elseif ($product.name -like "*Adidas*Hoodie*") {
+                $script:products.AdidasHoodie = $product.id
+                Write-Info "Found Adidas Hoodie: $($product.id)"
+            }
+        }
+        
+        if ($script:products.Count -gt 0) {
+            Write-Success "Fetched $($script:products.Count) product IDs"
+            return $true
+        } else {
+            Write-Failure "No products found in database"
+            return $false
+        }
+    } else {
+        Write-Failure "Failed to fetch products from API"
+        return $false
+    }
+}
+
 function Add-ItemToCart {
     param(
         [string]$productId,
         [int]$quantity = 1
     )
+    
+    if ([string]::IsNullOrEmpty($productId)) {
+        Write-Warning "Product ID is null or empty - cannot add to cart"
+        return $false
+    }
     
     $body = @{
         productId = $productId
@@ -231,10 +275,12 @@ function Add-ItemToCart {
         if ($response.StatusCode -eq 201) {
             $script:cartId = $response.Content.id
             return $true
+        } else {
+            Write-Warning "Failed to add item to cart. Status: $($response.StatusCode)"
+            return $false
         }
-        return $false
     } catch {
-        # Cart validation failed (e.g., insufficient stock)
+        Write-Warning "Error adding item to cart: $($_.Exception.Message)"
         return $false
     }
 }
@@ -1120,6 +1166,14 @@ try {
     # Initialize
     if (-not (Initialize-TestUser)) {
         Write-Host "${Red}Failed to initialize test user. Exiting.$Reset"
+        exit 1
+    }
+    
+    Start-Sleep -Seconds 1
+    
+    # Fetch product IDs
+    if (-not (Fetch-ProductIds)) {
+        Write-Host "${Red}Failed to fetch product IDs. Exiting.$Reset"
         exit 1
     }
     
