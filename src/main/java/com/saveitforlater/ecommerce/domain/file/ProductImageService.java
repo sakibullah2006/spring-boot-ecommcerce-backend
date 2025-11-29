@@ -1,6 +1,5 @@
 package com.saveitforlater.ecommerce.domain.file;
 
-import com.saveitforlater.ecommerce.domain.file.dto.FileMetadataResponse;
 import com.saveitforlater.ecommerce.domain.file.dto.ProductImageResponse;
 import com.saveitforlater.ecommerce.domain.file.dto.UpdateProductImageRequest;
 import com.saveitforlater.ecommerce.domain.file.exception.ProductImageNotFoundException;
@@ -8,7 +7,6 @@ import com.saveitforlater.ecommerce.domain.product.exception.ProductNotFoundExce
 import com.saveitforlater.ecommerce.persistence.entity.file.FileMetadata;
 import com.saveitforlater.ecommerce.persistence.entity.file.ProductImage;
 import com.saveitforlater.ecommerce.persistence.entity.product.Product;
-import com.saveitforlater.ecommerce.persistence.repository.file.FileMetadataRepository;
 import com.saveitforlater.ecommerce.persistence.repository.file.ProductImageRepository;
 import com.saveitforlater.ecommerce.persistence.repository.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +31,6 @@ public class ProductImageService {
 
     private final ProductImageRepository productImageRepository;
     private final ProductRepository productRepository;
-    private final FileMetadataRepository fileMetadataRepository;
     private final FileStorageService fileStorageService;
 
     /**
