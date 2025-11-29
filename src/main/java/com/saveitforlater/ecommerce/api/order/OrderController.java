@@ -2,8 +2,10 @@ package com.saveitforlater.ecommerce.api.order;
 
 import com.saveitforlater.ecommerce.api.order.dto.CreateOrderRequest;
 import com.saveitforlater.ecommerce.api.order.dto.OrderResponse;
+import com.saveitforlater.ecommerce.api.order.dto.ProcessPaymentRequest;
 import com.saveitforlater.ecommerce.domain.order.OrderService;
 import com.saveitforlater.ecommerce.persistence.entity.order.OrderStatus;
+import com.saveitforlater.ecommerce.persistence.entity.order.PaymentStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +26,7 @@ public class OrderController {
 
     /**
      * Create order from current user's cart - accessible to authenticated users
+     * Order created with PENDING status. Payment must be processed separately.
      */
     @PostMapping
     @PreAuthorize("isAuthenticated()")
@@ -31,6 +34,20 @@ public class OrderController {
         log.info("POST /api/orders - Creating order");
         OrderResponse order = orderService.createOrder(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(order);
+    }
+
+    /**
+     * Process payment for an order - accessible to order owner
+     * Only for card-based payment methods (not COD)
+     */
+    @PostMapping("/{orderId}/pay")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<OrderResponse> processPayment(
+            @PathVariable String orderId,
+            @Valid @RequestBody ProcessPaymentRequest request) {
+        log.info("POST /api/orders/{}/pay - Processing payment", orderId);
+        OrderResponse order = orderService.processPayment(orderId, request.paymentDetails());
+        return ResponseEntity.ok(order);
     }
 
     /**
@@ -76,6 +93,19 @@ public class OrderController {
             @RequestParam OrderStatus status) {
         log.info("PATCH /api/orders/{}/status - Updating order status to: {}", orderId, status);
         OrderResponse order = orderService.updateOrderStatus(orderId, status);
+        return ResponseEntity.ok(order);
+    }
+
+    /**
+     * Update payment status - ADMIN ONLY (for COD orders)
+     */
+    @PatchMapping("/{orderId}/payment-status")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<OrderResponse> updatePaymentStatus(
+            @PathVariable String orderId,
+            @RequestParam PaymentStatus paymentStatus) {
+        log.info("PATCH /api/orders/{}/payment-status - Updating payment status to: {}", orderId, paymentStatus);
+        OrderResponse order = orderService.updatePaymentStatus(orderId, paymentStatus);
         return ResponseEntity.ok(order);
     }
 }

@@ -24,9 +24,5 @@ public record CreateOrderRequest(
         String notes,
         
         @NotNull(message = "Payment method is required")
-        PaymentMethod paymentMethod,
-        
-        @Valid
-        @NotNull(message = "Payment details are required")
-        PaymentDetailsRequest paymentDetails
+        PaymentMethod paymentMethod
 ) {}

@@ -255,13 +255,14 @@ function Clear-Cart {
 # ================================================================
 
 function Test-CreateOrderWithValidPayment {
-    Write-TestHeader "Test 1: Create Order with Valid Payment (VISA)"
+    Write-TestHeader "Test 1: Create Order with Valid Payment (VISA) - Two-Step Flow"
     
     # Setup cart
     Clear-Cart
     Add-ItemToCart -productId $products.iPhone -quantity 2
     Add-ItemToCart -productId $products.NikeTShirt -quantity 3
     
+    # Step 1: Create Order (no payment details)
     $orderRequest = @{
         shippingAddress = @{
             addressLine1 = "123 Main Street"
@@ -283,40 +284,59 @@ function Test-CreateOrderWithValidPayment {
         customerPhone = "+1234567890"
         notes = "Please deliver during business hours"
         paymentMethod = "CREDIT_CARD"
+    }
+    
+    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    
+    $orderId = $null
+    Test-Response -testName "Step 1: Create order (PENDING status)" -response $response -expectedStatus 201 -validationBlock {
+        param($content)
+        if (-not $content.id) { throw "Order ID missing" }
+        if (-not $content.orderNumber) { throw "Order number missing" }
+        if ($content.status -ne "PENDING") { throw "Order status should be PENDING after creation" }
+        if ($content.payment.paymentStatus -ne "PENDING") { throw "Payment status should be PENDING" }
+        
+        $script:orderId = $content.id
+        Write-Info "Order Number: $($content.orderNumber)"
+        Write-Info "Order ID: $($content.id)"
+        Write-Info "Status: PENDING (awaiting payment)"
+    }
+    
+    if (-not $script:orderId) { return }
+    
+    # Step 2: Process Payment
+    $paymentRequest = @{
         paymentDetails = @{
             cardNumber = "4532123456789012"  # Valid VISA
             cardHolderName = "John Doe"
             expiryDate = "12/25"
             cvv = "123"
-            cardBrand = "VISA"
         }
     }
     
-    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    $payResponse = Invoke-ApiRequest -method "POST" -endpoint "/orders/$script:orderId/pay" -body $paymentRequest -skipStatusCheck $true
     
-    Test-Response -testName "Create order with valid VISA card" -response $response -expectedStatus 201 -validationBlock {
+    Test-Response -testName "Step 2: Process payment (CONFIRMED status)" -response $payResponse -expectedStatus 200 -validationBlock {
         param($content)
-        if (-not $content.id) { throw "Order ID missing" }
-        if (-not $content.orderNumber) { throw "Order number missing" }
-        if ($content.status -ne "CONFIRMED") { throw "Order status should be CONFIRMED" }
+        if ($content.status -ne "CONFIRMED") { throw "Order status should be CONFIRMED after payment" }
         if ($content.payment.paymentStatus -ne "COMPLETED") { throw "Payment status should be COMPLETED" }
         if ($content.payment.cardBrand -ne "VISA") { throw "Card brand should be VISA" }
         if ($content.payment.cardLastFour -ne "9012") { throw "Card last four digits incorrect" }
+        if (-not $content.payment.transactionId) { throw "Transaction ID missing" }
         
         $script:orderIds += $content.id
-        Write-Info "Order Number: $($content.orderNumber)"
-        Write-Info "Order ID: $($content.id)"
+        Write-Info "Payment successful - Transaction ID: $($content.payment.transactionId)"
         Write-Info "Total Amount: `$$($content.totalAmount)"
-        Write-Info "Transaction ID: $($content.payment.transactionId)"
     }
 }
 
 function Test-CreateOrderWithMastercard {
-    Write-TestHeader "Test 2: Create Order with Mastercard"
+    Write-TestHeader "Test 2: Create Order with Mastercard - Two-Step Flow"
     
     Clear-Cart
     Add-ItemToCart -productId $products.Samsung -quantity 1
     
+    # Step 1: Create Order
     $orderRequest = @{
         shippingAddress = @{
             addressLine1 = "456 Oak Avenue"
@@ -334,18 +354,31 @@ function Test-CreateOrderWithMastercard {
         }
         customerEmail = "test@example.com"
         paymentMethod = "CREDIT_CARD"
+    }
+    
+    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    
+    $orderId = $null
+    Test-Response -testName "Create order" -response $response -expectedStatus 201 -validationBlock {
+        param($content)
+        $script:orderId = $content.id
+    }
+    
+    if (-not $script:orderId) { return }
+    
+    # Step 2: Process Payment
+    $paymentRequest = @{
         paymentDetails = @{
             cardNumber = "5412345678901234"  # Mastercard
             cardHolderName = "Jane Smith"
             expiryDate = "06/26"
             cvv = "456"
-            cardBrand = "MASTERCARD"
         }
     }
     
-    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    $payResponse = Invoke-ApiRequest -method "POST" -endpoint "/orders/$script:orderId/pay" -body $paymentRequest -skipStatusCheck $true
     
-    Test-Response -testName "Create order with Mastercard" -response $response -expectedStatus 201 -validationBlock {
+    Test-Response -testName "Process Mastercard payment" -response $payResponse -expectedStatus 200 -validationBlock {
         param($content)
         if ($content.payment.cardBrand -ne "MASTERCARD") { throw "Card brand should be MASTERCARD" }
         if ($content.payment.paymentStatus -ne "COMPLETED") { throw "Payment should be completed" }
@@ -354,11 +387,12 @@ function Test-CreateOrderWithMastercard {
 }
 
 function Test-CreateOrderWithAmex {
-    Write-TestHeader "Test 3: Create Order with American Express"
+    Write-TestHeader "Test 3: Create Order with American Express - Two-Step Flow"
     
     Clear-Cart
     Add-ItemToCart -productId $products.MacBook -quantity 1
     
+    # Step 1: Create Order
     $orderRequest = @{
         shippingAddress = @{
             addressLine1 = "789 Pine Road"
@@ -376,18 +410,31 @@ function Test-CreateOrderWithAmex {
         }
         customerEmail = "amex@test.com"
         paymentMethod = "CREDIT_CARD"
-        paymentDetails = @{
-            cardNumber = "3782822463100005"  # AMEX (15 digits, but we need 16, so using 16-digit starting with 3)
-            cardHolderName = "Bob Johnson"
-            expiryDate = "09/27"
-            cvv = "7890"
-            cardBrand = "AMEX"
-        }
     }
     
     $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
     
-    Test-Response -testName "Create order with AMEX" -response $response -expectedStatus 201 -validationBlock {
+    $orderId = $null
+    Test-Response -testName "Create order" -response $response -expectedStatus 201 -validationBlock {
+        param($content)
+        $script:orderId = $content.id
+    }
+    
+    if (-not $script:orderId) { return }
+    
+    # Step 2: Process Payment
+    $paymentRequest = @{
+        paymentDetails = @{
+            cardNumber = "3782822463100005"  # AMEX
+            cardHolderName = "Bob Johnson"
+            expiryDate = "09/27"
+            cvv = "7890"
+        }
+    }
+    
+    $payResponse = Invoke-ApiRequest -method "POST" -endpoint "/orders/$script:orderId/pay" -body $paymentRequest -skipStatusCheck $true
+    
+    Test-Response -testName "Process AMEX payment" -response $payResponse -expectedStatus 200 -validationBlock {
         param($content)
         if ($content.payment.cardBrand -ne "AMEX") { throw "Card brand should be AMEX" }
         $script:orderIds += $content.id
@@ -400,6 +447,7 @@ function Test-CreateOrderWithFailedPayment {
     Clear-Cart
     Add-ItemToCart -productId $products.iPad -quantity 1
     
+    # Step 1: Create Order
     $orderRequest = @{
         shippingAddress = @{
             addressLine1 = "321 Elm Street"
@@ -417,32 +465,46 @@ function Test-CreateOrderWithFailedPayment {
         }
         customerEmail = "failed@test.com"
         paymentMethod = "CREDIT_CARD"
+    }
+    
+    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    
+    $orderId = $null
+    Test-Response -testName "Create order" -response $response -expectedStatus 201 -validationBlock {
+        param($content)
+        $script:orderId = $content.id
+    }
+    
+    if (-not $script:orderId) { return }
+    
+    # Step 2: Process Payment with failing card
+    $paymentRequest = @{
         paymentDetails = @{
             cardNumber = "4532123456780000"  # Card ending in 0000 - should fail
             cardHolderName = "Failed Test"
             expiryDate = "12/25"
             cvv = "123"
-            cardBrand = "VISA"
         }
     }
     
-    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    $payResponse = Invoke-ApiRequest -method "POST" -endpoint "/orders/$script:orderId/pay" -body $paymentRequest -skipStatusCheck $true
     
-    Test-Response -testName "Create order with failed payment" -response $response -expectedStatus 201 -validationBlock {
+    Test-Response -testName "Process payment with failing card" -response $payResponse -expectedStatus 200 -validationBlock {
         param($content)
-        if ($content.status -ne "PENDING") { throw "Order status should be PENDING for failed payment" }
+        if ($content.status -ne "PENDING") { throw "Order status should remain PENDING for failed payment" }
         if ($content.payment.paymentStatus -ne "FAILED") { throw "Payment status should be FAILED" }
-        Write-Info "Order created but payment failed as expected"
+        Write-Info "Payment correctly failed as expected"
         $script:orderIds += $content.id
     }
 }
 
 function Test-CreateOrderWithDebitCard {
-    Write-TestHeader "Test 5: Create Order with Debit Card Payment Method"
+    Write-TestHeader "Test 5: Create Order with Debit Card Payment Method - Two-Step Flow"
     
     Clear-Cart
     Add-ItemToCart -productId $products.AdidasHoodie -quantity 2
     
+    # Step 1: Create Order
     $orderRequest = @{
         shippingAddress = @{
             addressLine1 = "555 Broadway"
@@ -460,26 +522,40 @@ function Test-CreateOrderWithDebitCard {
         }
         customerEmail = "debit@test.com"
         paymentMethod = "DEBIT_CARD"
+    }
+    
+    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    
+    $orderId = $null
+    Test-Response -testName "Create order with debit card method" -response $response -expectedStatus 201 -validationBlock {
+        param($content)
+        if ($content.payment.paymentMethod -ne "DEBIT_CARD") { throw "Payment method should be DEBIT_CARD" }
+        $script:orderId = $content.id
+    }
+    
+    if (-not $script:orderId) { return }
+    
+    # Step 2: Process Payment
+    $paymentRequest = @{
         paymentDetails = @{
             cardNumber = "4532111111111111"
             cardHolderName = "Debit User"
             expiryDate = "03/26"
             cvv = "789"
-            cardBrand = "VISA"
         }
     }
     
-    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    $payResponse = Invoke-ApiRequest -method "POST" -endpoint "/orders/$script:orderId/pay" -body $paymentRequest -skipStatusCheck $true
     
-    Test-Response -testName "Create order with debit card" -response $response -expectedStatus 201 -validationBlock {
+    Test-Response -testName "Process debit card payment" -response $payResponse -expectedStatus 200 -validationBlock {
         param($content)
-        if ($content.payment.paymentMethod -ne "DEBIT_CARD") { throw "Payment method should be DEBIT_CARD" }
+        if ($content.payment.paymentStatus -ne "COMPLETED") { throw "Payment should be completed" }
         $script:orderIds += $content.id
     }
 }
 
 function Test-CreateOrderWithMultipleItems {
-    Write-TestHeader "Test 6: Create Order with Multiple Different Items"
+    Write-TestHeader "Test 6: Create Order with Multiple Different Items - Two-Step Flow"
     
     Clear-Cart
     Add-ItemToCart -productId $products.iPhone -quantity 1
@@ -487,6 +563,7 @@ function Test-CreateOrderWithMultipleItems {
     Add-ItemToCart -productId $products.NikeTShirt -quantity 3
     Add-ItemToCart -productId $products.AdidasHoodie -quantity 2
     
+    # Step 1: Create Order
     $orderRequest = @{
         shippingAddress = @{
             addressLine1 = "999 Market Street"
@@ -506,21 +583,35 @@ function Test-CreateOrderWithMultipleItems {
         customerPhone = "+1-555-0123"
         notes = "Multiple items order test"
         paymentMethod = "CREDIT_CARD"
+    }
+    
+    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    
+    $orderId = $null
+    Test-Response -testName "Create order with multiple items" -response $response -expectedStatus 201 -validationBlock {
+        param($content)
+        if ($content.items.Count -ne 4) { throw "Should have 4 different items" }
+        Write-Info "Order contains $($content.items.Count) different items"
+        $script:orderId = $content.id
+    }
+    
+    if (-not $script:orderId) { return }
+    
+    # Step 2: Process Payment
+    $paymentRequest = @{
         paymentDetails = @{
             cardNumber = "4532987654321098"
             cardHolderName = "Multi Item Buyer"
             expiryDate = "08/25"
             cvv = "321"
-            cardBrand = "VISA"
         }
     }
     
-    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    $payResponse = Invoke-ApiRequest -method "POST" -endpoint "/orders/$script:orderId/pay" -body $paymentRequest -skipStatusCheck $true
     
-    Test-Response -testName "Create order with multiple items" -response $response -expectedStatus 201 -validationBlock {
+    Test-Response -testName "Process payment for multi-item order" -response $payResponse -expectedStatus 200 -validationBlock {
         param($content)
-        if ($content.items.Count -ne 4) { throw "Should have 4 different items" }
-        Write-Info "Order contains $($content.items.Count) different items"
+        if ($content.payment.paymentStatus -ne "COMPLETED") { throw "Payment should be completed" }
         $script:orderIds += $content.id
     }
 }
@@ -551,13 +642,6 @@ function Test-CreateOrderWithEmptyCart {
         }
         customerEmail = "empty@test.com"
         paymentMethod = "CREDIT_CARD"
-        paymentDetails = @{
-            cardNumber = "4532123456789012"
-            cardHolderName = "Empty Cart"
-            expiryDate = "12/25"
-            cvv = "123"
-            cardBrand = "VISA"
-        }
     }
     
     $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
@@ -591,13 +675,6 @@ function Test-CreateOrderWithInvalidEmail {
         }
         customerEmail = "invalid-email"  # Invalid email
         paymentMethod = "CREDIT_CARD"
-        paymentDetails = @{
-            cardNumber = "4532123456789012"
-            cardHolderName = "Test User"
-            expiryDate = "12/25"
-            cvv = "123"
-            cardBrand = "VISA"
-        }
     }
     
     $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
@@ -606,11 +683,12 @@ function Test-CreateOrderWithInvalidEmail {
 }
 
 function Test-CreateOrderWithInvalidCardNumber {
-    Write-TestHeader "Test 9: Try to Create Order with Invalid Card Number"
+    Write-TestHeader "Test 9: Try to Process Payment with Invalid Card Number"
     
     Clear-Cart
     Add-ItemToCart -productId $products.Samsung -quantity 1
     
+    # Step 1: Create Order
     $orderRequest = @{
         shippingAddress = @{
             addressLine1 = "123 Main Street"
@@ -628,26 +706,39 @@ function Test-CreateOrderWithInvalidCardNumber {
         }
         customerEmail = "test@example.com"
         paymentMethod = "CREDIT_CARD"
+    }
+    
+    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    
+    $orderId = $null
+    if ($response.StatusCode -eq 201) {
+        $script:orderId = $response.Content.id
+    }
+    
+    if (-not $script:orderId) { return }
+    
+    # Step 2: Try to process payment with invalid card
+    $paymentRequest = @{
         paymentDetails = @{
             cardNumber = "1234"  # Invalid - must be 16 digits
             cardHolderName = "Test User"
             expiryDate = "12/25"
             cvv = "123"
-            cardBrand = "VISA"
         }
     }
     
-    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    $payResponse = Invoke-ApiRequest -method "POST" -endpoint "/orders/$script:orderId/pay" -body $paymentRequest -skipStatusCheck $true
     
-    Test-Response -testName "Reject order with invalid card number" -response $response -expectedStatus 400
+    Test-Response -testName "Reject payment with invalid card number" -response $payResponse -expectedStatus 400
 }
 
 function Test-CreateOrderWithInvalidCVV {
-    Write-TestHeader "Test 10: Try to Create Order with Invalid CVV"
+    Write-TestHeader "Test 10: Try to Process Payment with Invalid CVV"
     
     Clear-Cart
     Add-ItemToCart -productId $products.MacBook -quantity 1
     
+    # Step 1: Create Order
     $orderRequest = @{
         shippingAddress = @{
             addressLine1 = "123 Main Street"
@@ -665,18 +756,30 @@ function Test-CreateOrderWithInvalidCVV {
         }
         customerEmail = "test@example.com"
         paymentMethod = "CREDIT_CARD"
+    }
+    
+    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    
+    $orderId = $null
+    if ($response.StatusCode -eq 201) {
+        $script:orderId = $response.Content.id
+    }
+    
+    if (-not $script:orderId) { return }
+    
+    # Step 2: Try to process payment with invalid CVV
+    $paymentRequest = @{
         paymentDetails = @{
             cardNumber = "4532123456789012"
             cardHolderName = "Test User"
             expiryDate = "12/25"
             cvv = "12"  # Invalid - must be 3 or 4 digits
-            cardBrand = "VISA"
         }
     }
     
-    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    $payResponse = Invoke-ApiRequest -method "POST" -endpoint "/orders/$script:orderId/pay" -body $paymentRequest -skipStatusCheck $true
     
-    Test-Response -testName "Reject order with invalid CVV" -response $response -expectedStatus 400
+    Test-Response -testName "Reject payment with invalid CVV" -response $payResponse -expectedStatus 400
 }
 
 function Test-CreateOrderWithMissingAddress {
@@ -695,13 +798,6 @@ function Test-CreateOrderWithMissingAddress {
         }
         customerEmail = "test@example.com"
         paymentMethod = "CREDIT_CARD"
-        paymentDetails = @{
-            cardNumber = "4532123456789012"
-            cardHolderName = "Test User"
-            expiryDate = "12/25"
-            cvv = "123"
-            cardBrand = "VISA"
-        }
     }
     
     $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
@@ -762,11 +858,12 @@ function Test-GetNonExistentOrder {
 # ================================================================
 
 function Test-CreateOrderWithPaypal {
-    Write-TestHeader "Test 15: Create Order with PayPal Payment Method"
+    Write-TestHeader "Test 15: Create Order with PayPal Payment Method - Two-Step Flow"
     
     Clear-Cart
     Add-ItemToCart -productId $products.NikeTShirt -quantity 2
     
+    # Step 1: Create Order
     $orderRequest = @{
         shippingAddress = @{
             addressLine1 = "777 PayPal Street"
@@ -784,26 +881,40 @@ function Test-CreateOrderWithPaypal {
         }
         customerEmail = "paypal@test.com"
         paymentMethod = "PAYPAL"
+    }
+    
+    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    
+    $orderId = $null
+    Test-Response -testName "Create order with PayPal method" -response $response -expectedStatus 201 -validationBlock {
+        param($content)
+        if ($content.payment.paymentMethod -ne "PAYPAL") { throw "Payment method should be PAYPAL" }
+        $script:orderId = $content.id
+    }
+    
+    if (-not $script:orderId) { return }
+    
+    # Step 2: Process Payment
+    $paymentRequest = @{
         paymentDetails = @{
             cardNumber = "4532123456789012"  # Dummy for validation
             cardHolderName = "PayPal User"
             expiryDate = "12/25"
             cvv = "123"
-            cardBrand = "VISA"
         }
     }
     
-    $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
+    $payResponse = Invoke-ApiRequest -method "POST" -endpoint "/orders/$script:orderId/pay" -body $paymentRequest -skipStatusCheck $true
     
-    Test-Response -testName "Create order with PayPal" -response $response -expectedStatus 201 -validationBlock {
+    Test-Response -testName "Process PayPal payment" -response $payResponse -expectedStatus 200 -validationBlock {
         param($content)
-        if ($content.payment.paymentMethod -ne "PAYPAL") { throw "Payment method should be PAYPAL" }
+        if ($content.payment.paymentStatus -ne "COMPLETED") { throw "Payment should be completed" }
         $script:orderIds += $content.id
     }
 }
 
 function Test-CreateOrderWithCashOnDelivery {
-    Write-TestHeader "Test 16: Create Order with Cash on Delivery"
+    Write-TestHeader "Test 16: Create Order with Cash on Delivery (No Payment Processing)"
     
     Clear-Cart
     Add-ItemToCart -productId $products.AdidasHoodie -quantity 1
@@ -825,20 +936,16 @@ function Test-CreateOrderWithCashOnDelivery {
         }
         customerEmail = "cod@test.com"
         paymentMethod = "CASH_ON_DELIVERY"
-        paymentDetails = @{
-            cardNumber = "4532123456789012"  # Dummy for validation
-            cardHolderName = "COD User"
-            expiryDate = "12/25"
-            cvv = "123"
-            cardBrand = "VISA"
-        }
     }
     
     $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
     
-    Test-Response -testName "Create order with Cash on Delivery" -response $response -expectedStatus 201 -validationBlock {
+    Test-Response -testName "Create COD order (awaits admin confirmation)" -response $response -expectedStatus 201 -validationBlock {
         param($content)
         if ($content.payment.paymentMethod -ne "CASH_ON_DELIVERY") { throw "Payment method should be CASH_ON_DELIVERY" }
+        if ($content.payment.paymentStatus -ne "PENDING") { throw "COD payment should be PENDING" }
+        if ($content.status -ne "PENDING") { throw "COD order should be PENDING" }
+        Write-Info "COD order created - awaiting admin payment confirmation"
         $script:orderIds += $content.id
     }
 }
@@ -848,11 +955,12 @@ function Test-CreateOrderWithCashOnDelivery {
 # ================================================================
 
 function Test-CreateOrderWithOptionalFields {
-    Write-TestHeader "Test 17: Create Order with All Optional Fields"
+    Write-TestHeader "Test 17: Create Order with All Optional Fields - Two-Step Flow"
     
     Clear-Cart
     Add-ItemToCart -productId $products.iPhone -quantity 1
     
+    # Step 1: Create Order
     $orderRequest = @{
         shippingAddress = @{
             addressLine1 = "111 Complete Street"
@@ -874,23 +982,37 @@ function Test-CreateOrderWithOptionalFields {
         customerPhone = "+1-555-9876"
         notes = "This is a comprehensive test order with all optional fields filled in. Please handle with care and deliver between 9 AM - 5 PM."
         paymentMethod = "CREDIT_CARD"
-        paymentDetails = @{
-            cardNumber = "4532567890123456"
-            cardHolderName = "Complete Test User"
-            expiryDate = "11/26"
-            cvv = "999"
-            cardBrand = "VISA"
-        }
     }
     
     $response = Invoke-ApiRequest -method "POST" -endpoint "/orders" -body $orderRequest -skipStatusCheck $true
     
+    $orderId = $null
     Test-Response -testName "Create order with all optional fields" -response $response -expectedStatus 201 -validationBlock {
         param($content)
         if (-not $content.customerPhone) { throw "Customer phone should be present" }
         if (-not $content.notes) { throw "Notes should be present" }
         if (-not $content.shippingAddress.addressLine2) { throw "Address line 2 should be present" }
         Write-Info "Notes: $($content.notes.Substring(0, 50))..."
+        $script:orderId = $content.id
+    }
+    
+    if (-not $script:orderId) { return }
+    
+    # Step 2: Process Payment
+    $paymentRequest = @{
+        paymentDetails = @{
+            cardNumber = "4532567890123456"
+            cardHolderName = "Complete Test User"
+            expiryDate = "11/26"
+            cvv = "999"
+        }
+    }
+    
+    $payResponse = Invoke-ApiRequest -method "POST" -endpoint "/orders/$script:orderId/pay" -body $paymentRequest -skipStatusCheck $true
+    
+    Test-Response -testName "Process payment for complete order" -response $payResponse -expectedStatus 200 -validationBlock {
+        param($content)
+        if ($content.payment.paymentStatus -ne "COMPLETED") { throw "Payment should be completed" }
         $script:orderIds += $content.id
     }
 }

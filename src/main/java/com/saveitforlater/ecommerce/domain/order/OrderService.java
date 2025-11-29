@@ -43,7 +43,7 @@ public class OrderService {
     private final OrderMapper orderMapper;
 
     /**
-     * Create order from current user's cart
+     * Create order from current user's cart (Step 1: Order creation only, no payment)
      */
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -61,7 +61,7 @@ public class OrderService {
         // Validate stock availability and calculate total
         BigDecimal totalAmount = validateStockAndCalculateTotal(cart);
 
-        // Create order
+        // Create order with PENDING status
         Order order = new Order();
         order.setUser(currentUser);
         order.setStatus(OrderStatus.PENDING);
@@ -100,31 +100,75 @@ public class OrderService {
             order.addItem(orderItem);
         }
 
-        // Process payment
-        Payment payment = processPayment(order, request.paymentMethod(), request.paymentDetails());
+        // Create payment record with PENDING status
+        Payment payment = new Payment();
+        payment.setPaymentMethod(request.paymentMethod());
+        payment.setAmount(totalAmount);
+        payment.setPaymentStatus(PaymentStatus.PENDING);
         order.setPayment(payment);
 
-        // Update order status based on payment
-        if (payment.getPaymentStatus() == PaymentStatus.COMPLETED) {
+        // Save order (status remains PENDING until payment)
+        Order savedOrder = orderRepository.save(order);
+
+        // Clear cart after order creation
+        cart.getItems().clear();
+        cartRepository.save(cart);
+
+        log.info("Order created successfully with PENDING status: {}", savedOrder.getOrderNumber());
+        return orderMapper.toOrderResponse(savedOrder);
+    }
+
+    /**
+     * Process payment for an order (Step 2: Payment processing for card payments)
+     */
+    @Transactional
+    public OrderResponse processPayment(String orderId, PaymentDetailsRequest paymentDetails) {
+        User currentUser = getCurrentUser();
+        log.info("Processing payment for order: {}", orderId);
+
+        Order order = orderRepository.findByPublicId(orderId)
+                .orElseThrow(() -> OrderNotFoundException.byId(orderId));
+
+        // Authorization: only order owner can pay
+        if (!order.getUser().getId().equals(currentUser.getId())) {
+            throw OrderNotFoundException.byId(orderId);
+        }
+
+        // Validate order can be paid
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new IllegalStateException("Order is not in PENDING status");
+        }
+
+        Payment payment = order.getPayment();
+        if (payment.getPaymentStatus() != PaymentStatus.PENDING) {
+            throw new IllegalStateException("Payment already processed");
+        }
+
+        // Only process payment for card-based methods
+        if (payment.getPaymentMethod() == com.saveitforlater.ecommerce.persistence.entity.order.PaymentMethod.CASH_ON_DELIVERY) {
+            throw new IllegalStateException("Cash on delivery orders cannot use this endpoint");
+        }
+
+        // Re-validate stock before payment
+        validateStockForOrder(order);
+
+        // Process payment using dummy gateway
+        boolean paymentSuccess = processDummyPayment(payment, paymentDetails);
+
+        if (paymentSuccess) {
+            // Update order status to CONFIRMED
             order.setStatus(OrderStatus.CONFIRMED);
             
             // Reduce stock quantities
-            reduceStock(cart);
+            reduceStockForOrder(order);
+            
+            log.info("Payment successful for order: {}", order.getOrderNumber());
         } else {
-            order.setStatus(OrderStatus.PENDING);
+            log.warn("Payment failed for order: {}", order.getOrderNumber());
         }
 
-        // Save order
-        Order savedOrder = orderRepository.save(order);
-
-        // Clear cart after successful order
-        if (payment.getPaymentStatus() == PaymentStatus.COMPLETED) {
-            cart.getItems().clear();
-            cartRepository.save(cart);
-        }
-
-        log.info("Order created successfully: {}", savedOrder.getOrderNumber());
-        return orderMapper.toOrderResponse(savedOrder);
+        Order updatedOrder = orderRepository.save(order);
+        return orderMapper.toOrderResponse(updatedOrder);
     }
 
     /**
@@ -191,6 +235,34 @@ public class OrderService {
     }
 
     /**
+     * Update payment status (admin only - for COD orders)
+     */
+    @Transactional
+    public OrderResponse updatePaymentStatus(String orderId, PaymentStatus newPaymentStatus) {
+        log.info("Updating payment status for order {} to {}", orderId, newPaymentStatus);
+
+        Order order = orderRepository.findByPublicId(orderId)
+                .orElseThrow(() -> OrderNotFoundException.byId(orderId));
+
+        Payment payment = order.getPayment();
+        PaymentStatus oldStatus = payment.getPaymentStatus();
+        payment.setPaymentStatus(newPaymentStatus);
+
+        // If payment confirmed for first time, reduce stock and update order status
+        if (oldStatus != PaymentStatus.COMPLETED && newPaymentStatus == PaymentStatus.COMPLETED) {
+            validateStockForOrder(order);
+            reduceStockForOrder(order);
+            order.setStatus(OrderStatus.CONFIRMED);
+            payment.setPaymentDate(Instant.now());
+            payment.setTransactionId("COD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        }
+
+        Order updatedOrder = orderRepository.save(order);
+        log.info("Payment status updated successfully");
+        return orderMapper.toOrderResponse(updatedOrder);
+    }
+
+    /**
      * Validate stock availability and calculate total amount
      */
     private BigDecimal validateStockAndCalculateTotal(Cart cart) {
@@ -218,12 +290,28 @@ public class OrderService {
     }
 
     /**
+     * Validate stock for an existing order
+     */
+    private void validateStockForOrder(Order order) {
+        for (OrderItem orderItem : order.getItems()) {
+            Product product = orderItem.getProduct();
+            if (product.getStockQuantity() < orderItem.getQuantity()) {
+                throw InsufficientStockException.forProduct(
+                        product.getName(),
+                        orderItem.getQuantity(),
+                        product.getStockQuantity()
+                );
+            }
+        }
+    }
+
+    /**
      * Reduce stock quantities for products in the order
      */
-    private void reduceStock(Cart cart) {
-        for (CartItem cartItem : cart.getItems()) {
-            Product product = cartItem.getProduct();
-            int newStock = product.getStockQuantity() - cartItem.getQuantity();
+    private void reduceStockForOrder(Order order) {
+        for (OrderItem orderItem : order.getItems()) {
+            Product product = orderItem.getProduct();
+            int newStock = product.getStockQuantity() - orderItem.getQuantity();
             product.setStockQuantity(newStock);
             productRepository.save(product);
         }
@@ -231,15 +319,11 @@ public class OrderService {
 
     /**
      * Process payment using dummy gateway
+     * Returns true if payment successful, false otherwise
      */
-    private Payment processPayment(Order order, 
-                                  com.saveitforlater.ecommerce.persistence.entity.order.PaymentMethod paymentMethod,
-                                  PaymentDetailsRequest paymentDetails) {
-        log.info("Processing payment for order using dummy gateway");
+    private boolean processDummyPayment(Payment payment, PaymentDetailsRequest paymentDetails) {
+        log.info("Processing payment using dummy gateway");
 
-        Payment payment = new Payment();
-        payment.setPaymentMethod(paymentMethod);
-        payment.setAmount(order.getTotalAmount());
         payment.setPaymentGateway("DUMMY_GATEWAY");
 
         // Simulate payment processing with dummy credentials
@@ -253,6 +337,7 @@ public class OrderService {
             if (cardLastFour.equals("0000")) {
                 payment.setPaymentStatus(PaymentStatus.FAILED);
                 log.warn("Dummy payment failed: Card ending in 0000 is rejected");
+                return false;
             } else {
                 // Simulate successful payment
                 payment.setPaymentStatus(PaymentStatus.COMPLETED);
@@ -261,14 +346,14 @@ public class OrderService {
                 payment.setCardLastFour(cardLastFour);
                 payment.setCardBrand(cardBrand);
                 log.info("Dummy payment successful: Transaction ID: {}", payment.getTransactionId());
+                return true;
             }
 
         } catch (Exception e) {
             log.error("Payment processing error: {}", e.getMessage());
             payment.setPaymentStatus(PaymentStatus.FAILED);
+            return false;
         }
-
-        return payment;
     }
 
     /**
