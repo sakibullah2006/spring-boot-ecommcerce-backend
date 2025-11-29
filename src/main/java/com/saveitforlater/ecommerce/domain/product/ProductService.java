@@ -15,6 +15,7 @@ import com.saveitforlater.ecommerce.persistence.entity.category.Category;
 import com.saveitforlater.ecommerce.persistence.entity.product.*;
 import com.saveitforlater.ecommerce.persistence.repository.category.CategoryRepository;
 import com.saveitforlater.ecommerce.persistence.repository.product.ProductRepository;
+import com.saveitforlater.ecommerce.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -41,6 +42,7 @@ public class ProductService {
     private final AttributeOptionService attributeOptionService;
     private final ProductAttributeValueService productAttributeValueService;
     private final ProductImageService productImageService;
+    private final HtmlSanitizer htmlSanitizer;
 
     /**
      * Get all products (accessible to everyone)
@@ -114,6 +116,14 @@ public class ProductService {
         // Map basic fields
         Product product = productMapper.toProduct(request);
         product.setSlug(finalSlug);
+        
+        // Sanitize HTML content to prevent XSS attacks
+        if (request.description() != null) {
+            String sanitizedDescription = htmlSanitizer.sanitizeRichText(request.description());
+            product.setDescription(sanitizedDescription);
+            log.debug("Sanitized HTML description for product: {}", request.name());
+        }
+        
         log.debug("Set final slug: {} for product: {}", finalSlug, request.name());
 
         // Set categories if provided
@@ -192,9 +202,16 @@ public class ProductService {
             log.debug("Updated name for product: {}", publicId);
         }
         
+        if (request.shortDescription() != null) {
+            existingProduct.setShortDescription(request.shortDescription());
+            log.debug("Updated short description for product: {}", publicId);
+        }
+        
         if (request.description() != null) {
-            existingProduct.setDescription(request.description());
-            log.debug("Updated description for product: {}", publicId);
+            // Sanitize HTML content to prevent XSS attacks
+            String sanitizedDescription = htmlSanitizer.sanitizeRichText(request.description());
+            existingProduct.setDescription(sanitizedDescription);
+            log.debug("Updated and sanitized description for product: {}", publicId);
         }
         
         if (request.price() != null) {
@@ -332,6 +349,7 @@ public class ProductService {
             response.sku(),
             response.name(),
             response.slug(),
+            response.shortDescription(),
             response.description(),
             response.price(),
             response.salePrice(),

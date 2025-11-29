@@ -12,6 +12,7 @@ public record ProductResponse(
         String sku,
         String name,
         String slug,
+        String shortDescription,
         String description,
         BigDecimal price,
         BigDecimal salePrice,

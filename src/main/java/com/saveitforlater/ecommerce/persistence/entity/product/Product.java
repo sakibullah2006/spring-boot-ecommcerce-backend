@@ -42,7 +42,11 @@ public class Product {
     @Column(nullable = false, unique = true)
     private String slug;
 
+    @Column(length = 500)
+    private String shortDescription;
+
     @Lob
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Column(nullable = false, precision = 19, scale = 2)

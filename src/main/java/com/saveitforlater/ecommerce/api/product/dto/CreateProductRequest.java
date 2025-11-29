@@ -22,6 +22,9 @@ public record CreateProductRequest(
         @Size(max = 255)
         String slug,
 
+        @Size(max = 500)
+        String shortDescription,
+
         String description,
 
         @NotNull
