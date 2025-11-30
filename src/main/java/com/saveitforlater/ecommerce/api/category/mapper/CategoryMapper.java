@@ -8,7 +8,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-@Mapper // componentModel="spring" is set globally in your pom.xml
+@Mapper(componentModel = "spring")
 public interface CategoryMapper {
 
     @Mapping(source = "publicId", target = "id")

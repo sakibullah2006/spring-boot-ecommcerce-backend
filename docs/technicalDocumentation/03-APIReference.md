@@ -57,6 +57,13 @@ POST /auth/logout
 
 ## Product API
 
+### Get All Products
+```http
+GET /products
+```
+
+**Response**: `200 OK` (array of all products)
+
 ### Get All Products (Paginated)
 ```http
 GET /products/paginated?page=0&size=20&sort=name,asc
@@ -103,6 +110,23 @@ GET /products/sku/{sku}
 GET /products/slug/{slug}
 ```
 
+### Search Products with Filters
+```http
+GET /products/search?searchTerm=laptop&categoryIds=cat-uuid&minPrice=500&maxPrice=2000&inStock=true&page=0&size=20&sort=price,asc
+```
+
+**Query Parameters**:
+- `searchTerm` (optional): Search in name, shortDescription, and SKU
+- `categoryIds` (optional, repeatable): Filter by category IDs
+- `minPrice` (optional): Minimum price filter
+- `maxPrice` (optional): Maximum price filter
+- `inStock` (optional): Filter by stock status (true/false)
+- `page` (optional, default=0): Page number
+- `size` (optional, default=20): Items per page
+- `sort` (optional): Sort field and direction (e.g., price,asc)
+
+**Response**: Same as Get All Products (Paginated)
+
 ### Create Product (Admin Only)
 ```http
 POST /products
@@ -131,6 +155,48 @@ Content-Type: application/json
 
 **Response**: `201 Created`
 
+### Create Product with Images (Admin Only)
+```http
+POST /products/with-images
+Authorization: Required
+Content-Type: multipart/form-data
+
+Parameters:
+- product: JSON string containing product data (required)
+  {
+    "sku": "PROD-001",
+    "name": "Product Name",
+    "shortDescription": "Brief description",
+    "description": "<p>Rich HTML description</p>",
+    "price": 99.99,
+    "salePrice": 79.99,
+    "stockQuantity": 100,
+    "categoryIds": ["category-uuid"],
+    "attributes": [...]
+  }
+- images: Binary image files (optional, multiple files allowed)
+- primaryImageIndex: Integer (optional, default=0, specifies which image is primary)
+```
+
+**Response**: `201 Created`
+```json
+{
+  "id": "product-uuid",
+  "sku": "PROD-001",
+  "name": "Product Name",
+  "shortDescription": "Brief description",
+  "description": "<p>Rich HTML description</p>",
+  "price": 99.99,
+  "salePrice": 79.99,
+  "stockQuantity": 100,
+  "categories": [...],
+  "attributes": [...],
+  "images": []
+}
+```
+
+**Note**: Images are uploaded during product creation but are not included in the immediate response. Use `GET /files/products/{productId}/images` to retrieve them.
+
 ### Update Product (Admin Only)
 ```http
 PUT /products/{id}
@@ -157,6 +223,22 @@ DELETE /products/{id}
 ### Get All Categories
 ```http
 GET /categories
+```
+
+### Get All Categories (Paginated)
+```http
+GET /categories/paginated?page=0&size=20&sort=name,asc
+```
+
+**Response**: `200 OK`
+```json
+{
+  "content": [...],
+  "page": 0,
+  "size": 20,
+  "totalElements": 50,
+  "totalPages": 3
+}
 ```
 
 ### Get Category by ID
@@ -252,6 +334,32 @@ DELETE /cart/items/{cartItemId}
 
 **Response**: `200 OK` (returns updated cart)
 
+### Get My Cart Items (Paginated)
+```http
+GET /cart/items/paginated?page=0&size=10&sort=createdAt,desc
+Authorization: Required
+```
+
+**Response**: `200 OK`
+```json
+{
+  "content": [
+    {
+      "id": "item-uuid",
+      "productId": "product-uuid",
+      "productName": "iPhone 15",
+      "quantity": 2,
+      "unitPrice": 999.99,
+      "subtotal": 1999.98
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 5,
+  "totalPages": 1
+}
+```
+
 ### Clear Cart
 ```http
 DELETE /cart
@@ -324,8 +432,27 @@ Content-Type: application/json
 
 ### Get My Orders
 ```http
-GET /orders/my-orders?page=0&size=20
+GET /orders/my-orders
 Authorization: Required
+```
+
+**Response**: `200 OK` (array of orders)
+
+### Get My Orders (Paginated)
+```http
+GET /orders/my-orders/paginated?page=0&size=20&sort=createdAt,desc
+Authorization: Required
+```
+
+**Response**: `200 OK`
+```json
+{
+  "content": [...],
+  "page": 0,
+  "size": 20,
+  "totalElements": 45,
+  "totalPages": 3
+}
 ```
 
 ### Get Order by ID
@@ -336,9 +463,35 @@ Authorization: Required (Owner or Admin)
 
 ### Get All Orders (Admin Only)
 ```http
-GET /orders?page=0&size=20
+GET /orders
 Authorization: Admin
 ```
+
+**Response**: `200 OK` (array of all orders)
+
+### Get All Orders Paginated (Admin Only)
+```http
+GET /orders/paginated?page=0&size=20&sort=createdAt,desc
+Authorization: Admin
+```
+
+**Response**: `200 OK` (paginated response)
+
+### Get Orders by User ID (Admin Only)
+```http
+GET /orders/user/{userPublicId}
+Authorization: Admin
+```
+
+**Response**: `200 OK` (array of user's orders)
+
+### Get Orders by User ID Paginated (Admin Only)
+```http
+GET /orders/user/{userPublicId}/paginated?page=0&size=20&sort=createdAt,desc
+Authorization: Admin
+```
+
+**Response**: `200 OK` (paginated response)
 
 ### Update Order Status (Admin Only)
 ```http
@@ -359,6 +512,22 @@ Authorization: Admin
 ### Get All Attributes
 ```http
 GET /attributes
+```
+
+### Get All Attributes (Paginated)
+```http
+GET /attributes/paginated?page=0&size=20&sort=name,asc
+```
+
+**Response**: `200 OK`
+```json
+{
+  "content": [...],
+  "page": 0,
+  "size": 20,
+  "totalElements": 30,
+  "totalPages": 2
+}
 ```
 
 ### Get Attribute by ID

@@ -3,6 +3,8 @@ package com.saveitforlater.ecommerce.domain.product;
 import com.saveitforlater.ecommerce.persistence.entity.product.Attribute;
 import com.saveitforlater.ecommerce.persistence.repository.product.AttributeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -19,6 +21,10 @@ public class AttributeService {
 
     public List<Attribute> getAllActiveAttributes() {
         return attributeRepository.findAllActiveOrderByName();
+    }
+
+    public Page<Attribute> getAttributes(Pageable pageable) {
+        return attributeRepository.findAll(pageable);
     }
 
     public Optional<Attribute> findByPublicId(String publicId) {

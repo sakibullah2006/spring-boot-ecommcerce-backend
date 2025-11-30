@@ -10,6 +10,9 @@ import com.saveitforlater.ecommerce.persistence.entity.product.AttributeOption;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,6 +39,17 @@ public class AttributeController {
         List<AttributeDto> response = attributes.stream()
                 .map(productMapper::toAttributeDto)
                 .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get paginated attributes (accessible to everyone)
+     */
+    @GetMapping("/paginated")
+    public ResponseEntity<Page<AttributeDto>> getAttributes(
+            @PageableDefault(size = 20, sort = "name") Pageable pageable) {
+        Page<Attribute> attributes = attributeService.getAttributes(pageable);
+        Page<AttributeDto> response = attributes.map(productMapper::toAttributeDto);
         return ResponseEntity.ok(response);
     }
 

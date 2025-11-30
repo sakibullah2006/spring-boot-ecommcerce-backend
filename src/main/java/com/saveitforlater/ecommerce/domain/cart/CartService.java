@@ -1,6 +1,7 @@
 package com.saveitforlater.ecommerce.domain.cart;
 
 import com.saveitforlater.ecommerce.api.cart.dto.AddToCartRequest;
+import com.saveitforlater.ecommerce.api.cart.dto.CartItemResponse;
 import com.saveitforlater.ecommerce.api.cart.dto.CartResponse;
 import com.saveitforlater.ecommerce.api.cart.dto.UpdateCartItemRequest;
 import com.saveitforlater.ecommerce.api.cart.mapper.CartMapper;
@@ -17,6 +18,8 @@ import com.saveitforlater.ecommerce.persistence.repository.cart.CartRepository;
 import com.saveitforlater.ecommerce.persistence.repository.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -61,6 +64,21 @@ public class CartService {
                 .orElseThrow(() -> CartNotFoundException.byUserId(userPublicId));
 
         return cartMapper.toCartResponse(cart);
+    }
+
+    /**
+     * Get paginated cart items for current user
+     */
+    @Transactional(readOnly = true)
+    public Page<CartItemResponse> getMyCartItems(Pageable pageable) {
+        User currentUser = getCurrentUser();
+        log.debug("Fetching paginated cart items for user: {}", currentUser.getEmail());
+        
+        Cart cart = cartRepository.findByUser(currentUser)
+                .orElseGet(() -> createCartForUser(currentUser));
+
+        return cartItemRepository.findByCart(cart, pageable)
+                .map(cartMapper::toCartItemResponse);
     }
 
     /**
