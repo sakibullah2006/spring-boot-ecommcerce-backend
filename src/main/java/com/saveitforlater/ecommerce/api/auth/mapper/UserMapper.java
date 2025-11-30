@@ -5,7 +5,7 @@ import com.saveitforlater.ecommerce.persistence.entity.user.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface UserMapper {
 
     @Mapping(source = "publicId", target = "id")
