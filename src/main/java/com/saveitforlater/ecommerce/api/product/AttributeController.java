@@ -91,12 +91,23 @@ public class AttributeController {
     }
 
     /**
-     * Deactivate an attribute (ADMIN ONLY)
+     * Deactivate an attribute (soft delete) (ADMIN ONLY)
      */
-    @DeleteMapping("/{attributeId}")
+    @PatchMapping("/{attributeId}/deactivate")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Void> deactivateAttribute(@PathVariable String attributeId) {
         attributeService.deactivateAttribute(attributeId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Permanently delete an attribute (ADMIN ONLY)
+     * Only works if the attribute is not used by any products
+     */
+    @DeleteMapping("/{attributeId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<Void> deleteAttribute(@PathVariable String attributeId) {
+        attributeService.deleteAttribute(attributeId);
         return ResponseEntity.noContent().build();
     }
 
@@ -142,12 +153,23 @@ public class AttributeController {
     }
 
     /**
-     * Deactivate an attribute option (ADMIN ONLY)
+     * Deactivate an attribute option (soft delete) (ADMIN ONLY)
      */
-    @DeleteMapping("/options/{optionId}")
+    @PatchMapping("/options/{optionId}/deactivate")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Void> deactivateAttributeOption(@PathVariable String optionId) {
         attributeOptionService.deactivateOption(optionId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Permanently delete an attribute option (ADMIN ONLY)
+     * Only works if the option is not used by any products
+     */
+    @DeleteMapping("/options/{optionId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<Void> deleteAttributeOption(@PathVariable String optionId) {
+        attributeOptionService.deleteOption(optionId);
         return ResponseEntity.noContent().build();
     }
 
