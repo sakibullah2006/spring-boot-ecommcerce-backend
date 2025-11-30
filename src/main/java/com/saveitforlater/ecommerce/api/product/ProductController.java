@@ -1,6 +1,7 @@
 package com.saveitforlater.ecommerce.api.product;
 
 import com.saveitforlater.ecommerce.api.product.dto.CreateProductRequest;
+import com.saveitforlater.ecommerce.api.product.dto.ProductFilterRequest;
 import com.saveitforlater.ecommerce.api.product.dto.ProductResponse;
 import com.saveitforlater.ecommerce.api.product.dto.UpdateProductRequest;
 import com.saveitforlater.ecommerce.domain.file.ProductImageService;
@@ -19,6 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Slf4j
@@ -49,6 +51,34 @@ public class ProductController {
             @PageableDefault(size = 20, sort = "name") Pageable pageable) {
         log.debug("GET /api/products/paginated - Fetching products with pagination: {}", pageable);
         Page<ProductResponse> products = productService.getProducts(pageable);
+        return ResponseEntity.ok(products);
+    }
+
+    /**
+     * Search and filter products with pagination - accessible to everyone
+     * Supports query parameters for filtering: searchTerm, categoryIds, minPrice, maxPrice, inStock
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Page<ProductResponse>> searchProducts(
+            @RequestParam(required = false) String searchTerm,
+            @RequestParam(required = false) List<String> categoryIds,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Boolean inStock,
+            @PageableDefault(size = 20, sort = "name") Pageable pageable) {
+        log.debug("GET /api/products/search - Searching products with filters");
+        
+        // Build filter from query parameters
+        ProductFilterRequest filter = new ProductFilterRequest(
+            searchTerm, 
+            categoryIds, 
+            minPrice, 
+            maxPrice, 
+            inStock, 
+            null  // attributes filtering not supported via query params (too complex)
+        );
+        
+        Page<ProductResponse> products = productService.getProductsWithFilters(filter, pageable);
         return ResponseEntity.ok(products);
     }
 

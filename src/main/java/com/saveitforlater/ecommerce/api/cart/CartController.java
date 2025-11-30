@@ -1,12 +1,16 @@
 package com.saveitforlater.ecommerce.api.cart;
 
 import com.saveitforlater.ecommerce.api.cart.dto.AddToCartRequest;
+import com.saveitforlater.ecommerce.api.cart.dto.CartItemResponse;
 import com.saveitforlater.ecommerce.api.cart.dto.CartResponse;
 import com.saveitforlater.ecommerce.api.cart.dto.UpdateCartItemRequest;
 import com.saveitforlater.ecommerce.domain.cart.CartService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,6 +44,18 @@ public class CartController {
         log.debug("GET /api/cart/user/{} - Fetching cart by user ID", userId);
         CartResponse cart = cartService.getCartByUserId(userId);
         return ResponseEntity.ok(cart);
+    }
+
+    /**
+     * Get paginated cart items - accessible to authenticated users
+     */
+    @GetMapping("/items/paginated")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Page<CartItemResponse>> getMyCartItems(
+            @PageableDefault(size = 20, sort = "id") Pageable pageable) {
+        log.debug("GET /api/cart/items/paginated - Fetching paginated cart items");
+        Page<CartItemResponse> cartItems = cartService.getMyCartItems(pageable);
+        return ResponseEntity.ok(cartItems);
     }
 
     /**

@@ -21,6 +21,8 @@ import com.saveitforlater.ecommerce.persistence.repository.order.OrderRepository
 import com.saveitforlater.ecommerce.persistence.repository.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -206,6 +208,18 @@ public class OrderService {
     }
 
     /**
+     * Get paginated orders for current user
+     */
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getMyOrdersPaginated(Pageable pageable) {
+        User currentUser = getCurrentUser();
+        log.debug("Fetching paginated orders for user: {}", currentUser.getEmail());
+
+        return orderRepository.findByUserOrderByCreatedAtDesc(currentUser, pageable)
+                .map(orderMapper::toOrderResponse);
+    }
+
+    /**
      * Get all orders (admin only)
      */
     @Transactional(readOnly = true)
@@ -215,6 +229,38 @@ public class OrderService {
         return orders.stream()
                 .map(orderMapper::toOrderResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Get paginated orders (admin only)
+     */
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getAllOrdersPaginated(Pageable pageable) {
+        log.debug("Fetching all paginated orders (admin)");
+        return orderRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(orderMapper::toOrderResponse);
+    }
+
+    /**
+     * Get orders for a specific user by user ID (admin only)
+     */
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getOrdersByUserId(String userPublicId) {
+        log.debug("Fetching orders for user ID: {} (admin)", userPublicId);
+        List<Order> orders = orderRepository.findByUserPublicId(userPublicId);
+        return orders.stream()
+                .map(orderMapper::toOrderResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get paginated orders for a specific user by user ID (admin only)
+     */
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getOrdersByUserIdPaginated(String userPublicId, Pageable pageable) {
+        log.debug("Fetching paginated orders for user ID: {} (admin)", userPublicId);
+        return orderRepository.findByUserPublicIdPaginated(userPublicId, pageable)
+                .map(orderMapper::toOrderResponse);
     }
 
     /**

@@ -2,6 +2,7 @@ package com.saveitforlater.ecommerce.domain.product;
 
 import com.saveitforlater.ecommerce.api.product.dto.CreateProductRequest;
 import com.saveitforlater.ecommerce.api.product.dto.ProductAttributeDto;
+import com.saveitforlater.ecommerce.api.product.dto.ProductFilterRequest;
 import com.saveitforlater.ecommerce.api.product.dto.ProductResponse;
 import com.saveitforlater.ecommerce.api.product.dto.UpdateProductRequest;
 import com.saveitforlater.ecommerce.api.product.mapper.ProductMapper;
@@ -15,11 +16,13 @@ import com.saveitforlater.ecommerce.persistence.entity.category.Category;
 import com.saveitforlater.ecommerce.persistence.entity.product.*;
 import com.saveitforlater.ecommerce.persistence.repository.category.CategoryRepository;
 import com.saveitforlater.ecommerce.persistence.repository.product.ProductRepository;
+import com.saveitforlater.ecommerce.persistence.specification.ProductSpecification;
 import com.saveitforlater.ecommerce.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -61,6 +64,16 @@ public class ProductService {
     public Page<ProductResponse> getProducts(Pageable pageable) {
         log.debug("Fetching products with pagination: {}", pageable);
         return productRepository.findAll(pageable)
+                .map(this::toProductResponseWithImages);
+    }
+
+    /**
+     * Get paginated products with filters (accessible to everyone)
+     */
+    public Page<ProductResponse> getProductsWithFilters(ProductFilterRequest filter, Pageable pageable) {
+        log.debug("Fetching products with filters and pagination: filter={}, pageable={}", filter, pageable);
+        Specification<Product> spec = ProductSpecification.withFilters(filter);
+        return productRepository.findAll(spec, pageable)
                 .map(this::toProductResponseWithImages);
     }
 

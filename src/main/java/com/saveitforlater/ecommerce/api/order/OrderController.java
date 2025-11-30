@@ -9,6 +9,9 @@ import com.saveitforlater.ecommerce.persistence.entity.order.PaymentStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -73,6 +76,18 @@ public class OrderController {
     }
 
     /**
+     * Get paginated orders for current user - accessible to authenticated users
+     */
+    @GetMapping("/my-orders/paginated")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Page<OrderResponse>> getMyOrdersPaginated(
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+        log.debug("GET /api/orders/my-orders/paginated - Fetching user's paginated orders");
+        Page<OrderResponse> orders = orderService.getMyOrdersPaginated(pageable);
+        return ResponseEntity.ok(orders);
+    }
+
+    /**
      * Get all orders - ADMIN ONLY
      */
     @GetMapping
@@ -80,6 +95,42 @@ public class OrderController {
     public ResponseEntity<List<OrderResponse>> getAllOrders() {
         log.debug("GET /api/orders - Fetching all orders (admin)");
         List<OrderResponse> orders = orderService.getAllOrders();
+        return ResponseEntity.ok(orders);
+    }
+
+    /**
+     * Get paginated orders - ADMIN ONLY
+     */
+    @GetMapping("/paginated")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<Page<OrderResponse>> getAllOrdersPaginated(
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+        log.debug("GET /api/orders/paginated - Fetching all paginated orders (admin)");
+        Page<OrderResponse> orders = orderService.getAllOrdersPaginated(pageable);
+        return ResponseEntity.ok(orders);
+    }
+
+    /**
+     * Get orders for a specific user - ADMIN ONLY
+     */
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<List<OrderResponse>> getOrdersByUserId(@PathVariable String userId) {
+        log.debug("GET /api/orders/user/{} - Fetching orders for user (admin)", userId);
+        List<OrderResponse> orders = orderService.getOrdersByUserId(userId);
+        return ResponseEntity.ok(orders);
+    }
+
+    /**
+     * Get paginated orders for a specific user - ADMIN ONLY
+     */
+    @GetMapping("/user/{userId}/paginated")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<Page<OrderResponse>> getOrdersByUserIdPaginated(
+            @PathVariable String userId,
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+        log.debug("GET /api/orders/user/{}/paginated - Fetching paginated orders for user (admin)", userId);
+        Page<OrderResponse> orders = orderService.getOrdersByUserIdPaginated(userId, pageable);
         return ResponseEntity.ok(orders);
     }
 
