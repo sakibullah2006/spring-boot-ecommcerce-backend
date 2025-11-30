@@ -132,6 +132,10 @@ dMart follows a layered architecture pattern with clear separation of concerns. 
 
 The architecture diagram is shown in Figure~\ref{fig:architecture}.
 
+% To replace this placeholder with an actual image:
+% 1. Save your image in docs/latex/images/ directory (e.g., architecture-diagram.png)
+% 2. Replace the \fbox{\parbox{...}} block below with:
+%    \includegraphics[width=0.9\textwidth,keepaspectratio]{images/architecture-diagram.png}
 \begin{figure}[H]
     \centering
     \fbox{\parbox{0.9\textwidth}{\centering
@@ -218,6 +222,14 @@ The following tools and technologies were used in the development of dMart:
         Git & Version Control \\
         PowerShell & 7.x (Testing Scripts) \\
         \hline
+        \multicolumn{2}{|l|}{\textbf{Frontend Technologies}} \\
+        \hline
+        React/Vue/Angular & Frontend Framework \\
+        HTML5/CSS3 & Markup and Styling \\
+        JavaScript/TypeScript & Client-side Scripting \\
+        Tailwind CSS/Bootstrap & CSS Framework \\
+        Axios/Fetch & HTTP Client \\
+        \hline
     \end{tabular}
     \caption{Technology Stack}
     \label{tab:technologies}
@@ -292,6 +304,170 @@ The \texttt{OrderService} class manages order processing:
     }}
     \caption{Key Service Implementation Example}
     \label{fig:code}
+\end{figure}
+
+\subsection{Frontend Implementation}
+
+The dMart frontend provides a modern, responsive user interface that seamlessly integrates with the Spring Boot backend API. The frontend implementation focuses on delivering an intuitive shopping experience for customers and efficient management tools for administrators.
+
+\subsubsection{Frontend Architecture}
+
+The frontend follows a component-based architecture with clear separation between:
+\begin{itemize}
+    \item \textbf{Presentation Layer}: UI components, pages, and layouts
+    \item \textbf{State Management}: Application state and data flow
+    \item \textbf{API Integration}: HTTP client services for backend communication
+    \item \textbf{Routing}: Navigation and page routing
+    \item \textbf{Authentication}: User session and role-based access control
+\end{itemize}
+
+\subsubsection{Customer-Facing Features}
+
+The customer interface includes the following key features:
+
+\begin{itemize}
+    \item \textbf{Product Browsing}: Responsive product grid with filtering and search capabilities
+    \item \textbf{Product Details}: Comprehensive product pages with images, attributes, and descriptions
+    \item \textbf{Shopping Cart}: Interactive cart management with real-time quantity updates
+    \item \textbf{Checkout Process}: Multi-step checkout with address and payment method selection
+    \item \textbf{Order Management}: Order history and tracking with status updates
+    \item \textbf{User Authentication}: Secure login and registration with session management
+    \item \textbf{Category Navigation}: Hierarchical category browsing with breadcrumbs
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Product Listing Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Product grid, filters, search bar, category navigation}
+    }}
+    \caption{Product Listing and Browsing Interface}
+    \label{fig:product-listing}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Product Detail Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Product images, attributes, description, add to cart button}
+    }}
+    \caption{Product Detail Page}
+    \label{fig:product-detail}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Shopping Cart Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Cart items, quantities, totals, checkout button}
+    }}
+    \caption{Shopping Cart Interface}
+    \label{fig:shopping-cart}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Checkout Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Order summary, shipping address, payment method selection}
+    }}
+    \caption{Checkout Process}
+    \label{fig:checkout}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Order History Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{List of orders, order status, order details view}
+    }}
+    \caption{Order History and Tracking}
+    \label{fig:order-history}
+\end{figure}
+
+\subsubsection{Admin Features}
+
+The administrative interface provides comprehensive management capabilities:
+
+\begin{itemize}
+    \item \textbf{Product Management}: Create, edit, and delete products with image uploads
+    \item \textbf{Category Management}: Manage hierarchical product categories
+    \item \textbf{Attribute Management}: Configure reusable product attributes and options
+    \item \textbf{Order Management}: View all orders, update status, and process payments
+    \item \textbf{User Management}: View user accounts and manage roles
+    \item \textbf{Dashboard}: Overview of key metrics and recent activities
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Admin Dashboard]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Admin dashboard with statistics, recent orders, quick actions}
+    }}
+    \caption{Admin Dashboard}
+    \label{fig:admin-dashboard}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Product Management Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Product list, create/edit form, image upload interface}
+    }}
+    \caption{Admin Product Management Interface}
+    \label{fig:admin-products}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Order Management Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{All orders list, order details, status update interface}
+    }}
+    \caption{Admin Order Management Interface}
+    \label{fig:admin-orders}
+\end{figure}
+
+\subsubsection{User Interface Design}
+
+The frontend implements a modern, clean design with the following characteristics:
+
+\begin{itemize}
+    \item \textbf{Responsive Design}: Mobile-first approach ensuring optimal experience across all devices
+    \item \textbf{Intuitive Navigation}: Clear menu structure and breadcrumb navigation
+    \item \textbf{Visual Feedback}: Loading states, success/error messages, and form validation feedback
+    \item \textbf{Accessibility}: Semantic HTML, proper ARIA labels, and keyboard navigation support
+    \item \textbf{Performance}: Optimized images, lazy loading, and efficient API calls
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Login/Registration Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Login form, registration form, authentication UI}
+    }}
+    \caption{User Authentication Interface}
+    \label{fig:auth}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Mobile Responsive View]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Mobile view of product listing or cart on mobile device}
+    }}
+    \caption{Mobile Responsive Design}
+    \label{fig:mobile}
 \end{figure}
 
 \section{Testing}
@@ -394,11 +570,11 @@ The following enhancements are planned for future versions:
 \begin{figure}[H]
     \centering
     \fbox{\parbox{0.9\textwidth}{\centering
-        \textbf{[PLACEHOLDER: Frontend Features Screenshot]}\\
-        \textit{Insert screenshot of frontend showing:}\\
-        \textit{Product listing, shopping cart, checkout, order history}
+        \textbf{[PLACEHOLDER: Frontend Homepage]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Homepage with featured products, categories, navigation menu}
     }}
-    \caption{Frontend Features Overview}
+    \caption{Frontend Homepage Overview}
     \label{fig:frontend}
 \end{figure}
 
