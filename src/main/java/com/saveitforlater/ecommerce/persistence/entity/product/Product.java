@@ -3,6 +3,7 @@ package com.saveitforlater.ecommerce.persistence.entity.product;
 
 
 import com.saveitforlater.ecommerce.persistence.entity.category.Category;
+import com.saveitforlater.ecommerce.persistence.entity.file.ProductImage;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,7 +13,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -27,8 +30,8 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, updatable = false)
-    private UUID publicId;
+    @Column(nullable = false, unique = true, updatable = false, length = 36)
+    private String publicId;
 
     @Column(nullable = false, unique = true)
     private String sku;
@@ -36,7 +39,14 @@ public class Product {
     @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false, unique = true)
+    private String slug;
+
+    @Column(length = 500)
+    private String shortDescription;
+
     @Lob
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Column(nullable = false, precision = 19, scale = 2)
@@ -58,19 +68,48 @@ public class Product {
     )
     private Set<Category> categories = new HashSet<>();
 
+    // Product attributes using the new reusable system
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductAttributeValue> attributeValues = new ArrayList<>();
+
+    // Product images
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductImage> images = new ArrayList<>();
+
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
 
     @PrePersist
     public void prePersist() {
         if (this.publicId == null) {
-            this.publicId = UUID.randomUUID();
+            this.publicId = UUID.randomUUID().toString();
         }
+    }
+
+    // Helper methods for managing attribute values
+    public void addAttributeValue(ProductAttributeValue attributeValue) {
+        attributeValues.add(attributeValue);
+        attributeValue.setProduct(this);
+    }
+
+    public void removeAttributeValue(ProductAttributeValue attributeValue) {
+        attributeValues.remove(attributeValue);
+        attributeValue.setProduct(null);
+    }
+
+    public void addAttributeValue(Attribute attribute, AttributeOption option) {
+        ProductAttributeValue attributeValue = new ProductAttributeValue(this, attribute, option);
+        addAttributeValue(attributeValue);
+    }
+
+    public void removeAttributeValue(Attribute attribute, AttributeOption option) {
+        attributeValues.removeIf(av -> 
+            av.getAttribute().equals(attribute) && av.getAttributeOption().equals(option));
     }
 }

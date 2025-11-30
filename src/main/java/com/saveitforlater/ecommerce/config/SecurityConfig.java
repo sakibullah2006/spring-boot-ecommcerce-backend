@@ -12,7 +12,11 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -25,6 +29,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -39,7 +44,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(UserDetailsServiceImpl userDetailsService, PasswordEncoder passwordEncoder) throws Exception {
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(UserDetailsServiceImpl userDetailsService, PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
         authenticationProvider.setUserDetailsService(userDetailsService);
         authenticationProvider.setPasswordEncoder(passwordEncoder);
@@ -67,38 +77,67 @@ public class SecurityConfig {
 
         // 3. Disable Spring Security's default login/logout pages
         http.formLogin(AbstractHttpConfigurer::disable);
-        http.logout(AbstractHttpConfigurer::disable);
+
+        // Configure session management
+        http.sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .sessionFixation().migrateSession() // Protect against session fixation attacks
+                .maximumSessions(1)
+                .maxSessionsPreventsLogin(false)
+                .sessionRegistry(sessionRegistry())
+        );
 
         // 4. Configure Authorization Rules
         http.authorizeHttpRequests(authz -> authz
-                // Public endpoints
+                // Public endpoints - allow anonymous access
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/logout").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/products/**", "/api/v1/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**", "/api/attributes/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
+                .requestMatchers("/api/auth/debug/**").permitAll() // Debug endpoints (remove in production)
+                .requestMatchers("/error").permitAll() // Spring Boot error endpoint
+                .requestMatchers("/actuator/health").permitAll() // Health check endpoint
 
                 // Secure all other endpoints
-                .requestMatchers("/api/v1/users/me", "/api/v1/orders/**", "/api/v1/cart/**").authenticated()
+                .requestMatchers("/api/users/me", "/api/orders/**", "/api/cart/**").authenticated()
                 .requestMatchers("/api/auth/session").authenticated()
+                .requestMatchers("/actuator/**").hasRole("ADMIN") // Admin-only actuator endpoints
                 .anyRequest().authenticated()
         );
 
         // 5. Set our custom UserDetailsService
         http.userDetailsService(userDetailsService);
 
-        // 6. Add a custom AuthenticationEntryPoint for REST API (sends 401)
+        // 6. Add custom exception handling for REST API
         http.exceptionHandling(ex -> ex
                 // This is called when an unauthenticated user tries to access a protected route.
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
-                    // Simple JSON response
-                    response.getWriter().write("{\"error\": \"User not authenticated\"}");
+                    response.setCharacterEncoding("UTF-8");
+
+                    String jsonResponse = String.format(
+                        "{\"error\":\"AUTHENTICATION_REQUIRED\",\"message\":\"%s\",\"status\":401,\"timestamp\":\"%s\",\"path\":\"%s\"}",
+                        "Authentication required to access this resource",
+                        java.time.LocalDateTime.now().toString(),
+                        request.getRequestURI()
+                    );
+
+                    response.getWriter().write(jsonResponse);
                 })
                 // This is called when an authenticated user tries to access a route they don't have permission for.
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                     response.setContentType("application/json");
-                    // Simple JSON response
-                    response.getWriter().write("{\"error\": \"Forbidden route\"}");
+                    response.setCharacterEncoding("UTF-8");
+
+                    String jsonResponse = String.format(
+                        "{\"error\":\"ACCESS_DENIED\",\"message\":\"%s\",\"status\":403,\"timestamp\":\"%s\",\"path\":\"%s\"}",
+                        "Access denied - insufficient privileges",
+                        java.time.LocalDateTime.now().toString(),
+                        request.getRequestURI()
+                    );
+
+                    response.getWriter().write(jsonResponse);
                 })
         );
 
