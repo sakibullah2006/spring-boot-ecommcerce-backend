@@ -134,24 +134,106 @@ Authorization: Required
 Content-Type: application/json
 
 {
-  "sku": "PROD-001",
-  "name": "Product Name",
-  "shortDescription": "Brief description",
-  "description": "<p>Rich HTML description</p>",
-  "price": 99.99,
-  "salePrice": 79.99,
-  "stockQuantity": 100,
-  "categoryIds": ["category-uuid"],
+  "sku": "LAPTOP-XPS15-001",
+  "name": "Dell XPS 15 Gaming Laptop",
+  "slug": "dell-xps-15-gaming-laptop",
+  "shortDescription": "High-performance laptop with Intel i9 processor and RTX 4070 graphics",
+  "description": "<h2>Features</h2><ul><li>Intel Core i9-13900H processor</li><li>32GB DDR5 RAM</li><li>1TB NVMe SSD</li><li>NVIDIA RTX 4070 8GB</li><li>15.6\" 4K OLED Display</li></ul>",
+  "price": 2499.99,
+  "salePrice": 2299.99,
+  "stockQuantity": 25,
+  "categoryIds": [
+    "electronics-category-uuid",
+    "laptops-category-uuid"
+  ],
   "attributes": [
     {
-      "attributeId": "attr-uuid",
+      "attributeId": "color-attribute-uuid",
       "options": [
-        {"optionId": "option-uuid"}
+        {
+          "optionId": "silver-option-uuid"
+        }
+      ]
+    },
+    {
+      "attributeId": "storage-attribute-uuid",
+      "options": [
+        {
+          "optionId": "1tb-option-uuid"
+        }
+      ]
+    },
+    {
+      "attributeId": "ram-attribute-uuid",
+      "options": [
+        {
+          "optionId": "32gb-option-uuid"
+        }
       ]
     }
   ]
 }
 ```
+
+**Alternative: Create Attributes Inline** (without pre-existing IDs):
+```json
+{
+  "sku": "LAPTOP-XPS15-001",
+  "name": "Dell XPS 15 Gaming Laptop",
+  "price": 2499.99,
+  "stockQuantity": 25,
+  "categoryIds": ["electronics-category-uuid"],
+  "attributes": [
+    {
+      "attributeName": "Color",
+      "attributeSlug": "color",
+      "attributeDescription": "Product color options",
+      "options": [
+        {
+          "optionName": "Silver",
+          "optionSlug": "silver",
+          "optionDescription": "Silver finish"
+        }
+      ]
+    },
+    {
+      "attributeName": "Storage",
+      "attributeSlug": "storage",
+      "options": [
+        {
+          "optionName": "1TB SSD",
+          "optionSlug": "1tb-ssd"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Minimal Example** (required fields only):
+```json
+{
+  "sku": "PROD-001",
+  "name": "Product Name",
+  "price": 99.99,
+  "stockQuantity": 100,
+  "categoryIds": []
+}
+```
+
+**Field Descriptions**:
+- `sku` (required, max 100 chars): Unique product identifier
+- `name` (required, max 255 chars): Product name
+- `slug` (optional, max 255 chars): URL-friendly name (auto-generated if not provided)
+- `shortDescription` (optional, max 500 chars): Brief description for listings
+- `description` (optional): Full HTML description
+- `price` (required): Regular price (must be ≥ 0)
+- `salePrice` (optional): Sale price (must be ≥ 0)
+- `stockQuantity` (required): Available stock (must be ≥ 0)
+- `categoryIds` (required): Array of category UUIDs (can be empty)
+- `attributes` (optional): Array of product attributes with options
+  - **Option 1 - Reference existing**: Use `attributeId` and `optionId`
+  - **Option 2 - Create inline**: Use `attributeName`, `attributeSlug` and `optionName`, `optionSlug`
 
 **Response**: `201 Created`
 
@@ -162,17 +244,46 @@ Authorization: Required
 Content-Type: multipart/form-data
 
 Parameters:
-- product: JSON string containing product data (required)
+- product: JSON string containing complete product data (required)
   {
-    "sku": "PROD-001",
-    "name": "Product Name",
-    "shortDescription": "Brief description",
-    "description": "<p>Rich HTML description</p>",
-    "price": 99.99,
-    "salePrice": 79.99,
-    "stockQuantity": 100,
-    "categoryIds": ["category-uuid"],
-    "attributes": [...]
+    "sku": "LAPTOP-XPS15-001",
+    "name": "Dell XPS 15 Gaming Laptop",
+    "slug": "dell-xps-15-gaming-laptop",
+    "shortDescription": "High-performance laptop with Intel i9 processor",
+    "description": "<h2>Features</h2><ul><li>Intel Core i9</li><li>32GB RAM</li></ul>",
+    "price": 2499.99,
+    "salePrice": 2299.99,
+    "stockQuantity": 25,
+    "categoryIds": [
+      "electronics-category-uuid",
+      "laptops-category-uuid"
+    ],
+    "attributes": [
+      {
+        "attributeId": "color-attribute-uuid",
+        "options": [{"optionId": "silver-option-uuid"}]
+      }
+    ]
+  }
+  OR (create attributes inline):
+  {
+    "sku": "LAPTOP-XPS15-001",
+    "name": "Dell XPS 15 Gaming Laptop",
+    "price": 2499.99,
+    "stockQuantity": 25,
+    "categoryIds": ["electronics-category-uuid"],
+    "attributes": [
+      {
+        "attributeName": "Color",
+        "attributeSlug": "color",
+        "options": [
+          {
+            "optionName": "Silver",
+            "optionSlug": "silver"
+          }
+        ]
+      }
+    ]
   }
 - images: Binary image files (optional, multiple files allowed)
 - primaryImageIndex: Integer (optional, default=0, specifies which image is primary)

@@ -2,6 +2,147 @@
 
 ## Quick Start Testing Guide
 
+### 0. Product Creation (Admin)
+
+#### Create Product - Full Example
+```bash
+curl -X POST "http://localhost:8080/api/products" \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sku": "LAPTOP-XPS15-001",
+    "name": "Dell XPS 15 Gaming Laptop",
+    "slug": "dell-xps-15-gaming-laptop",
+    "shortDescription": "High-performance laptop with Intel i9 processor and RTX 4070 graphics",
+    "description": "<h2>Features</h2><ul><li>Intel Core i9-13900H processor</li><li>32GB DDR5 RAM</li><li>1TB NVMe SSD</li><li>NVIDIA RTX 4070 8GB</li><li>15.6 inch 4K OLED Display</li></ul>",
+    "price": 2499.99,
+    "salePrice": 2299.99,
+    "stockQuantity": 25,
+    "categoryIds": [
+      "electronics-category-uuid",
+      "laptops-category-uuid"
+    ],
+    "attributes": [
+      {
+        "attributeId": "color-attribute-uuid",
+        "options": [
+          {"optionId": "silver-option-uuid"}
+        ]
+      },
+      {
+        "attributeId": "storage-attribute-uuid",
+        "options": [
+          {"optionId": "1tb-option-uuid"}
+        ]
+      },
+      {
+        "attributeId": "ram-attribute-uuid",
+        "options": [
+          {"optionId": "32gb-option-uuid"}
+        ]
+      }
+    ]
+  }'
+```
+
+#### Create Product - Inline Attributes (No Pre-existing IDs)
+```bash
+curl -X POST "http://localhost:8080/api/products" \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sku": "SMARTPHONE-001",
+    "name": "Samsung Galaxy S24",
+    "shortDescription": "Flagship Android smartphone",
+    "price": 899.99,
+    "stockQuantity": 50,
+    "categoryIds": ["smartphones-uuid"],
+    "attributes": [
+      {
+        "attributeName": "Color",
+        "attributeSlug": "color",
+        "attributeDescription": "Phone color",
+        "options": [
+          {
+            "optionName": "Phantom Black",
+            "optionSlug": "phantom-black",
+            "optionDescription": "Black finish"
+          }
+        ]
+      },
+      {
+        "attributeName": "Storage",
+        "attributeSlug": "storage",
+        "options": [
+          {
+            "optionName": "256GB",
+            "optionSlug": "256gb"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+#### Create Product - Minimal Example
+```bash
+curl -X POST "http://localhost:8080/api/products" \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sku": "PROD-001",
+    "name": "Basic Product",
+    "price": 99.99,
+    "stockQuantity": 100,
+    "categoryIds": []
+  }'
+```
+
+#### Create Product with Images (PowerShell)
+```powershell
+# Product data
+$productData = @{
+    sku = "LAPTOP-XPS15-001"
+    name = "Dell XPS 15 Gaming Laptop"
+    slug = "dell-xps-15-gaming-laptop"
+    shortDescription = "High-performance laptop with Intel i9 processor"
+    description = "<h2>Features</h2><ul><li>Intel Core i9</li><li>32GB RAM</li></ul>"
+    price = 2499.99
+    salePrice = 2299.99
+    stockQuantity = 25
+    categoryIds = @("electronics-uuid", "laptops-uuid")
+    attributes = @(
+        @{
+            attributeId = "color-uuid"
+            options = @(
+                @{ optionId = "silver-uuid" }
+            )
+        }
+    )
+} | ConvertTo-Json -Compress
+
+# Image files
+$image1 = Get-Item "C:\path\to\laptop-front.jpg"
+$image2 = Get-Item "C:\path\to\laptop-side.jpg"
+
+# Create form data
+$form = @{
+    product = $productData
+    images = $image1, $image2
+    primaryImageIndex = "0"
+}
+
+# Send request
+$response = Invoke-RestMethod -Uri "http://localhost:8080/api/products/with-images" `
+    -Method Post `
+    -Headers @{ "Authorization" = "Bearer $adminToken" } `
+    -Form $form
+
+$response | ConvertTo-Json -Depth 10
+```
+
+---
+
 ### 1. Product Filtering and Search
 
 #### Basic Search
