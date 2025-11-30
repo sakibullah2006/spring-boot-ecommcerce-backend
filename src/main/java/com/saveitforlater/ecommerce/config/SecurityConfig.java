@@ -97,8 +97,13 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll() // Spring Boot error endpoint
                 .requestMatchers("/actuator/health").permitAll() // Health check endpoint
 
+                // User management endpoints
+                .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated() // Get own profile
+                .requestMatchers(HttpMethod.PUT, "/api/users/me").authenticated() // Update own profile
+                .requestMatchers("/api/users/**").hasAuthority("ADMIN") // All other user endpoints require admin
+
                 // Secure all other endpoints
-                .requestMatchers("/api/users/me", "/api/orders/**", "/api/cart/**").authenticated()
+                .requestMatchers("/api/orders/**", "/api/cart/**").authenticated()
                 .requestMatchers("/api/auth/session").authenticated()
                 .requestMatchers("/actuator/**").hasRole("ADMIN") // Admin-only actuator endpoints
                 .anyRequest().authenticated()
