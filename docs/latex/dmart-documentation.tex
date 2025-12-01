@@ -57,6 +57,44 @@
 \begin{document}
 
 \maketitle
+
+% Team Information
+\begin{center}
+\vspace{1cm}
+\textbf{\Large Development Team}\\[0.5cm]
+\textit{Daffodil International University}\\[1cm]
+
+\begin{tabular}{p{4cm}l}
+    \textbf{Supervisor:} & \\
+    & \textbf{[Supervisor Name]}\\
+    & \textit{[Position]}\\
+    & Daffodil International University\\[0.6cm]
+    
+    \textbf{Lead Developer:} & \\
+    & \textbf{[Lead Developer Name]}\\
+    & ID: \textit{[ID]}\\
+    & Daffodil International University\\[0.6cm]
+    
+    \textbf{Developers:} & \\
+    & \textbf{[Developer 1 Name]}\\
+    & ID: \textit{[ID]}\\
+    & Daffodil International University\\[0.3cm]
+    
+    & \textbf{[Developer 2 Name]}\\
+    & ID: \textit{[ID]}\\
+    & Daffodil International University\\[0.3cm]
+    
+    & \textbf{[Developer 3 Name]}\\
+    & ID: \textit{[ID]}\\
+    & Daffodil International University\\[0.3cm]
+    
+    & \textbf{[Developer 4 Name]}\\
+    & ID: \textit{[ID]}\\
+    & Daffodil International University\\
+\end{tabular}
+\end{center}
+
+\newpage
 \tableofcontents
 \newpage
 
@@ -138,11 +176,7 @@ The architecture diagram is shown in Figure~\ref{fig:architecture}.
 %    \includegraphics[width=0.9\textwidth,keepaspectratio]{images/architecture-diagram.png}
 \begin{figure}[H]
     \centering
-    \fbox{\parbox{0.9\textwidth}{\centering
-        \textbf{[PLACEHOLDER: System Architecture Diagram]}\\
-        \textit{Insert frontend screenshot or diagram showing:}\\
-        \textit{Client Layer → API Layer → Service Layer → Repository Layer → Database}
-    }}
+    \includegraphics[width=0.9\textwidth,keepaspectratio]{images/architecture-diagram.png}
     \caption{System Architecture Overview}
     \label{fig:architecture}
 \end{figure}
@@ -165,12 +199,7 @@ The system consists of several key domain entities and their relationships:
 
 \begin{figure}[H]
     \centering
-    \fbox{\parbox{0.9\textwidth}{\centering
-        \textbf{[PLACEHOLDER: UML Class Diagram]}\\
-        \textit{Insert diagram showing:}\\
-        \textit{User, Product, Category, Cart, Order, Payment, Attribute entities}\\
-        \textit{with their relationships and key attributes}
-    }}
+    \includegraphics[width=0.9\textwidth,keepaspectratio]{images/uml_class.png}
     \caption{Class Diagram - Core Domain Entities}
     \label{fig:classdiagram}
 \end{figure}
@@ -186,12 +215,7 @@ The system supports two main actor roles:
 
 \begin{figure}[H]
     \centering
-    \fbox{\parbox{0.9\textwidth}{\centering
-        \textbf{[PLACEHOLDER: Use Case Diagram]}\\
-        \textit{Insert diagram showing:}\\
-        \textit{Customer: Browse Products, Add to Cart, Create Order, View Orders}\\
-        \textit{Admin: Manage Products, Manage Categories, Manage Orders, Upload Images}
-    }}
+    \includegraphics[width=0.9\textwidth,keepaspectratio]{images/use_case.png}
     \caption{Use Case Diagram}
     \label{fig:usecase}
 \end{figure}
@@ -599,10 +623,7 @@ The database schema includes the following main tables:
 
 \begin{figure}[H]
     \centering
-    \fbox{\parbox{0.9\textwidth}{\centering
-        \textbf{[PLACEHOLDER: Database Schema Diagram]}\\
-        \textit{Insert ER diagram showing table relationships}
-    }}
+    \includegraphics[width=0.9\textwidth,keepaspectratio]{images/database-schema.png}
     \caption{Database Entity Relationship Diagram}
     \label{fig:database}
 \end{figure}
