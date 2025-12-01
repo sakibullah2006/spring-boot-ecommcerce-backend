@@ -3,6 +3,7 @@ package com.saveitforlater.ecommerce.persistence.repository.product;
 import com.saveitforlater.ecommerce.persistence.entity.product.Attribute;
 import com.saveitforlater.ecommerce.persistence.entity.product.AttributeOption;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -35,4 +36,11 @@ public interface AttributeOptionRepository extends JpaRepository<AttributeOption
     
     @Query("SELECT COUNT(ao) > 0 FROM AttributeOption ao WHERE ao.attribute = :attribute AND ao.slug = :slug AND ao.id != :id")
     boolean existsByAttributeAndSlugAndIdNot(@Param("attribute") Attribute attribute, @Param("slug") String slug, @Param("id") Long id);
+    
+    @Modifying
+    @Query("DELETE FROM AttributeOption ao WHERE ao.publicId = :publicId")
+    void deleteByPublicId(@Param("publicId") String publicId);
+    
+    @Query("SELECT COUNT(pav) FROM ProductAttributeValue pav WHERE pav.attributeOption.publicId = :publicId")
+    long countProductUsages(@Param("publicId") String publicId);
 }

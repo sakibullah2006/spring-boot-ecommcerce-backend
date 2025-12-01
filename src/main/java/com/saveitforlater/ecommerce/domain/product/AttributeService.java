@@ -101,6 +101,23 @@ public class AttributeService {
         attribute.setActive(false);
         attributeRepository.save(attribute);
     }
+    
+    public void deleteAttribute(String publicId) {
+        Attribute attribute = attributeRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new IllegalArgumentException("Attribute not found with ID: " + publicId));
+        
+        // Check if attribute is being used by any products
+        long productUsageCount = attributeRepository.countProductUsages(publicId);
+        if (productUsageCount > 0) {
+            throw new IllegalStateException(
+                "Cannot delete attribute '" + attribute.getName() + "' because it is used by " + 
+                productUsageCount + " product(s). Please remove it from all products first or use deactivate instead."
+            );
+        }
+        
+        // Delete the attribute (options will be cascade deleted due to orphanRemoval = true)
+        attributeRepository.deleteByPublicId(publicId);
+    }
 
     private String generateSlug(String name) {
         return name.toLowerCase()

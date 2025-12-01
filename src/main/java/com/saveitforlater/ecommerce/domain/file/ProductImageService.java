@@ -1,5 +1,6 @@
 package com.saveitforlater.ecommerce.domain.file;
 
+import com.saveitforlater.ecommerce.domain.file.dto.FileMetadataResponse;
 import com.saveitforlater.ecommerce.domain.file.dto.ProductImageResponse;
 import com.saveitforlater.ecommerce.domain.file.dto.UpdateProductImageRequest;
 import com.saveitforlater.ecommerce.domain.file.exception.ProductImageNotFoundException;
@@ -203,35 +204,34 @@ public class ProductImageService {
      * Convert ProductImage entity to response DTO
      */
     private ProductImageResponse toProductImageResponse(ProductImage productImage) {
-        // FileMetadata metadata = productImage.getFileMetadata();
+        FileMetadata metadata = productImage.getFileMetadata();
         
         String imageUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/api/files/images/")
                 .path(productImage.getPublicId())
                 .toUriString();
         
-        // String downloadUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
-        //         .path("/api/files/download/")
-        //         .path(metadata.getPublicId())
-        //         .toUriString();
+        String downloadUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/files/download/")
+                .path(metadata.getPublicId())
+                .toUriString();
 
-        // FileMetadataResponse fileMetadataResponse = new FileMetadataResponse(
-        //         metadata.getPublicId(),
-        //         metadata.getFileName(),
-        //         metadata.getOriginalFileName(),
-        //         metadata.getFilePath(),
-        //         metadata.getFileSize(),
-        //         metadata.getContentType(),
-        //         metadata.getFileType().name(),
-        //         metadata.getCreatedAt().toString(),
-        //         downloadUrl
-        // );
+        FileMetadataResponse fileMetadataResponse = new FileMetadataResponse(
+                metadata.getPublicId(),
+                metadata.getFileName(),
+                metadata.getOriginalFileName(),
+                metadata.getFilePath(),
+                metadata.getFileSize(),
+                metadata.getContentType(),
+                metadata.getFileType().name(),
+                metadata.getCreatedAt().toString(),
+                downloadUrl
+        );
 
         return new ProductImageResponse(
                 productImage.getPublicId(),
                 productImage.getProduct().getPublicId(),
-                // fileMetadataResponse,
-                null,
+                fileMetadataResponse,
                 productImage.isPrimary(),
                 productImage.getDisplayOrder(),
                 productImage.getAltText(),

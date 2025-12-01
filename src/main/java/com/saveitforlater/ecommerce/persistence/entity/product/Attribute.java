@@ -46,7 +46,7 @@ public class Attribute {
     @Column(nullable = false)
     private boolean isActive = true; // Allow soft deletion
 
-    @OneToMany(mappedBy = "attribute", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "attribute", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<AttributeOption> options = new ArrayList<>();
 
     @CreationTimestamp

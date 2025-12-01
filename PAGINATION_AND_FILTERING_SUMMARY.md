@@ -5,7 +5,24 @@ This document summarizes the pagination and filtering enhancements added to the 
 
 ## Changes Made
 
-### 1. Product Filtering with Smart Querying ✅
+### 1. Product Pagination ✅
+
+#### Modified Files:
+- **`ProductRepository.java`** - Extended with `JpaSpecificationExecutor<Product>`
+- **`ProductService.java`** - Added `getProducts(Pageable)` method
+- **`ProductController.java`** - Added `GET /api/products/paginated` endpoint
+
+#### Endpoint Details:
+```
+GET /api/products/paginated?page=0&size=20&sort=name
+Response: Page<ProductResponse>
+Access: Public
+Default Sort: name
+```
+
+---
+
+### 2. Product Filtering with Smart Querying ✅
 
 #### New Files Created:
 - **`ProductFilterRequest.java`** - DTO for product filter criteria
@@ -22,42 +39,50 @@ This document summarizes the pagination and filtering enhancements added to the 
   - Implements subqueries for attribute filtering
 
 #### Modified Files:
-- **`ProductRepository.java`** - Extended with `JpaSpecificationExecutor<Product>`
 - **`ProductService.java`** - Added `getProductsWithFilters()` method
-- **`ProductController.java`** - Added `POST /api/products/search` endpoint
+- **`ProductController.java`** - Added `GET /api/products/search` endpoint
 
 #### Endpoint Details:
 ```
-POST /api/products/search
-Request Body: ProductFilterRequest (optional)
-Query Params: Pageable (page, size, sort)
+GET /api/products/search?searchTerm=laptop&categoryIds=uuid1,uuid2&minPrice=500&maxPrice=2000&inStock=true&page=0&size=20&sort=name
+Query Params: 
+  - searchTerm (optional): Search in name, description, SKU
+  - categoryIds (optional): List of category IDs
+  - minPrice (optional): Minimum price filter
+  - maxPrice (optional): Maximum price filter
+  - inStock (optional): Filter by stock availability
+  - Pageable params: page, size, sort
 Response: Page<ProductResponse>
+Access: Public
+Default Sort: name
 ```
 
 **Example Request:**
-```json
-{
-  "searchTerm": "laptop",
-  "categoryIds": ["cat-uuid-1", "cat-uuid-2"],
-  "minPrice": 500.00,
-  "maxPrice": 2000.00,
-  "inStock": true,
-  "attributes": [
-    {
-      "attributeName": "Color",
-      "optionNames": ["Black", "Silver"]
-    },
-    {
-      "attributeName": "Brand",
-      "optionNames": ["Dell", "HP"]
-    }
-  ]
-}
+```bash
+GET /api/products/search?searchTerm=laptop&minPrice=500&maxPrice=2000&inStock=true&page=0&size=20&sort=name,asc
+```
+
+**Note:** Attribute filtering via query parameters is not supported due to complexity. For advanced attribute filtering, the underlying `ProductSpecification` can be used programmatically.
+
+---
+
+### 3. Category Pagination ✅
+
+#### Modified Files:
+- **`CategoryService.java`** - Added `getCategories(Pageable)` method
+- **`CategoryController.java`** - Added `GET /api/categories/paginated` endpoint
+
+#### Endpoint Details:
+```
+GET /api/categories/paginated?page=0&size=20&sort=name
+Response: Page<CategoryResponse>
+Access: Public
+Default Sort: name
 ```
 
 ---
 
-### 2. Attribute Pagination ✅
+### 4. Attribute Pagination ✅
 
 #### Modified Files:
 - **`AttributeService.java`** - Added `getAttributes(Pageable)` method
@@ -68,11 +93,12 @@ Response: Page<ProductResponse>
 GET /api/attributes/paginated?page=0&size=20&sort=name
 Response: Page<AttributeDto>
 Access: Public
+Default Sort: name
 ```
 
 ---
 
-### 3. Cart Items Pagination ✅
+### 5. Cart Items Pagination ✅
 
 #### Modified Files:
 - **`CartItemRepository.java`** - Added `findByCart(Cart, Pageable)` method
@@ -84,11 +110,40 @@ Access: Public
 GET /api/cart/items/paginated?page=0&size=20&sort=id
 Response: Page<CartItemResponse>
 Access: Authenticated users only
+Default Sort: id
 ```
 
 ---
 
-### 4. Order Pagination ✅
+### 6. User Pagination ✅
+
+#### New Files Created:
+- **`UserDetailResponse.java`** - DTO for detailed user information with timestamps
+- **`CreateUserRequest.java`** - DTO for user creation
+- **`UpdateUserRequest.java`** - DTO for user updates
+
+#### Modified Files:
+- **`UserMapper.java`** - Added `toUserDetailResponse()` mapping method
+- **`UserService.java`** - Added `getUsers(Pageable)` and full CRUD methods
+- **`UserController.java`** - Added `GET /api/users/paginated` endpoint
+
+#### Endpoint Details:
+```
+GET /api/users/paginated?page=0&size=20&sort=createdAt
+Response: Page<UserDetailResponse>
+Access: Admin only
+Default Sort: createdAt
+```
+
+**UserDetailResponse includes:**
+- User ID, email, firstName, lastName
+- Role (CUSTOMER, ADMIN)
+- Account status (enabled)
+- Timestamps (createdAt, updatedAt)
+
+---
+
+### 7. Order Pagination ✅
 
 #### Modified Files:
 - **`OrderRepository.java`** - Added paginated query methods:
@@ -98,10 +153,12 @@ Access: Authenticated users only
 - **`OrderService.java`** - Added pagination methods:
   - `getMyOrdersPaginated(Pageable)` - For authenticated users
   - `getAllOrdersPaginated(Pageable)` - For admins
+  - `getOrdersByUserIdPaginated(String userId, Pageable)` - For admins to view specific user's orders
 
 - **`OrderController.java`** - Added pagination endpoints:
   - `GET /api/orders/my-orders/paginated` - User's orders
   - `GET /api/orders/paginated` - All orders (admin only)
+  - `GET /api/orders/user/{userId}/paginated` - Specific user's orders (admin only)
 
 #### Endpoint Details:
 
@@ -110,6 +167,7 @@ Access: Authenticated users only
 GET /api/orders/my-orders/paginated?page=0&size=20&sort=createdAt
 Response: Page<OrderResponse>
 Access: Authenticated users
+Default Sort: createdAt DESC
 ```
 
 **All Orders - Admin (Paginated):**
@@ -117,6 +175,15 @@ Access: Authenticated users
 GET /api/orders/paginated?page=0&size=20&sort=createdAt
 Response: Page<OrderResponse>
 Access: Admin only
+Default Sort: createdAt DESC
+```
+
+**Specific User's Orders - Admin (Paginated):**
+```
+GET /api/orders/user/{userId}/paginated?page=0&size=20&sort=createdAt
+Response: Page<OrderResponse>
+Access: Admin only
+Default Sort: createdAt DESC
 ```
 
 ---
@@ -158,45 +225,53 @@ Access: Admin only
 
 ## API Examples
 
-### 1. Search Products with Filters
+### 1. Get Paginated Products
 ```bash
-curl -X POST http://localhost:8080/api/products/search?page=0&size=10 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "searchTerm": "laptop",
-    "minPrice": 500,
-    "maxPrice": 1500,
-    "inStock": true,
-    "categoryIds": ["electronics-uuid"],
-    "attributes": [
-      {
-        "attributeName": "Brand",
-        "optionNames": ["Dell", "HP"]
-      }
-    ]
-  }'
+curl -X GET "http://localhost:8080/api/products/paginated?page=0&size=10&sort=name,asc"
 ```
 
-### 2. Get Paginated Attributes
+### 2. Search Products with Filters
+```bash
+curl -X GET "http://localhost:8080/api/products/search?searchTerm=laptop&minPrice=500&maxPrice=1500&inStock=true&categoryIds=electronics-uuid&page=0&size=10&sort=name,asc"
+```
+
+### 3. Get Paginated Categories
+```bash
+curl -X GET "http://localhost:8080/api/categories/paginated?page=0&size=20&sort=name,asc"
+```
+
+### 4. Get Paginated Attributes
 ```bash
 curl -X GET "http://localhost:8080/api/attributes/paginated?page=0&size=20&sort=name,asc"
 ```
 
-### 3. Get Paginated Cart Items
+### 5. Get Paginated Cart Items
 ```bash
 curl -X GET "http://localhost:8080/api/cart/items/paginated?page=0&size=10" \
   -H "Authorization: Bearer <token>"
 ```
 
-### 4. Get User's Paginated Orders
+### 6. Get Paginated Users (Admin)
+```bash
+curl -X GET "http://localhost:8080/api/users/paginated?page=0&size=20&sort=createdAt,desc" \
+  -H "Authorization: Bearer <admin-token>"
+```
+
+### 7. Get User's Paginated Orders
 ```bash
 curl -X GET "http://localhost:8080/api/orders/my-orders/paginated?page=0&size=10" \
   -H "Authorization: Bearer <token>"
 ```
 
-### 5. Get All Orders (Admin)
+### 8. Get All Orders (Admin)
 ```bash
 curl -X GET "http://localhost:8080/api/orders/paginated?page=0&size=20&sort=createdAt,desc" \
+  -H "Authorization: Bearer <admin-token>"
+```
+
+### 9. Get Specific User's Orders (Admin)
+```bash
+curl -X GET "http://localhost:8080/api/orders/user/{userId}/paginated?page=0&size=20&sort=createdAt,desc" \
   -H "Authorization: Bearer <admin-token>"
 ```
 
@@ -205,8 +280,9 @@ curl -X GET "http://localhost:8080/api/orders/paginated?page=0&size=20&sort=crea
 ## Performance Considerations
 
 1. **Database Indexes:**
-   - Ensure indexes on frequently queried columns (name, sku, createdAt)
+   - Ensure indexes on frequently queried columns (name, sku, createdAt, email)
    - Category and attribute joins benefit from foreign key indexes
+   - User email unique constraint ensures fast lookups
 
 2. **Query Optimization:**
    - Use of JPA Specifications allows for single database query
@@ -216,6 +292,7 @@ curl -X GET "http://localhost:8080/api/orders/paginated?page=0&size=20&sort=crea
 3. **Caching Opportunities:**
    - Product filters can be cached based on filter criteria
    - Category and attribute lists are good candidates for caching
+   - User lookups can benefit from second-level cache
 
 ---
 
@@ -228,8 +305,9 @@ curl -X GET "http://localhost:8080/api/orders/paginated?page=0&size=20&sort=crea
 
 2. **Integration Tests:**
    - Test complete filter + pagination flow
-   - Verify security on protected endpoints
+   - Verify security on protected endpoints (user, order admin endpoints)
    - Test edge cases (null filters, empty results)
+   - Verify user isolation (users can only see their own data)
 
 3. **Performance Tests:**
    - Benchmark queries with large datasets
@@ -280,24 +358,50 @@ curl -X GET "http://localhost:8080/api/orders/paginated?page=0&size=20&sort=crea
 
 ## Files Modified Summary
 
-### New Files (2):
+### New Files (6):
 1. `src/main/java/com/saveitforlater/ecommerce/api/product/dto/ProductFilterRequest.java`
 2. `src/main/java/com/saveitforlater/ecommerce/persistence/specification/ProductSpecification.java`
+3. `src/main/java/com/saveitforlater/ecommerce/api/user/dto/CreateUserRequest.java`
+4. `src/main/java/com/saveitforlater/ecommerce/api/user/dto/UpdateUserRequest.java`
+5. `src/main/java/com/saveitforlater/ecommerce/api/user/dto/UserDetailResponse.java`
+6. `src/main/java/com/saveitforlater/ecommerce/api/user/UserExceptionHandler.java`
 
-### Modified Files (10):
+### Modified Files (17):
 1. `src/main/java/com/saveitforlater/ecommerce/persistence/repository/product/ProductRepository.java`
 2. `src/main/java/com/saveitforlater/ecommerce/domain/product/ProductService.java`
 3. `src/main/java/com/saveitforlater/ecommerce/api/product/ProductController.java`
-4. `src/main/java/com/saveitforlater/ecommerce/domain/product/AttributeService.java`
-5. `src/main/java/com/saveitforlater/ecommerce/api/product/AttributeController.java`
-6. `src/main/java/com/saveitforlater/ecommerce/persistence/repository/cart/CartItemRepository.java`
-7. `src/main/java/com/saveitforlater/ecommerce/domain/cart/CartService.java`
-8. `src/main/java/com/saveitforlater/ecommerce/api/cart/CartController.java`
-9. `src/main/java/com/saveitforlater/ecommerce/persistence/repository/order/OrderRepository.java`
-10. `src/main/java/com/saveitforlater/ecommerce/domain/order/OrderService.java`
-11. `src/main/java/com/saveitforlater/ecommerce/api/order/OrderController.java`
+4. `src/main/java/com/saveitforlater/ecommerce/domain/category/CategoryService.java`
+5. `src/main/java/com/saveitforlater/ecommerce/api/category/CategoryController.java`
+6. `src/main/java/com/saveitforlater/ecommerce/domain/product/AttributeService.java`
+7. `src/main/java/com/saveitforlater/ecommerce/api/product/AttributeController.java`
+8. `src/main/java/com/saveitforlater/ecommerce/persistence/repository/cart/CartItemRepository.java`
+9. `src/main/java/com/saveitforlater/ecommerce/domain/cart/CartService.java`
+10. `src/main/java/com/saveitforlater/ecommerce/api/cart/CartController.java`
+11. `src/main/java/com/saveitforlater/ecommerce/persistence/repository/order/OrderRepository.java`
+12. `src/main/java/com/saveitforlater/ecommerce/domain/order/OrderService.java`
+13. `src/main/java/com/saveitforlater/ecommerce/api/order/OrderController.java`
+14. `src/main/java/com/saveitforlater/ecommerce/domain/user/UserService.java`
+15. `src/main/java/com/saveitforlater/ecommerce/api/user/UserController.java`
+16. `src/main/java/com/saveitforlater/ecommerce/domain/user/UserMapper.java`
+17. `src/main/java/com/saveitforlater/ecommerce/config/SecurityConfig.java`
 
 ---
 
-**Total Changes:** 2 new files, 11 modified files
+**Total Changes:** 6 new files, 17 modified files
 **Status:** ✅ Complete and tested
+
+## Summary of Pagination Endpoints
+
+| Resource | Endpoint | Access | Default Sort | Default Size |
+|----------|----------|--------|--------------|--------------|
+| Products | `GET /api/products/paginated` | Public | name | 20 |
+| Products (Filter) | `GET /api/products/search` | Public | name | 20 |
+| Categories | `GET /api/categories/paginated` | Public | name | 20 |
+| Attributes | `GET /api/attributes/paginated` | Public | name | 20 |
+| Cart Items | `GET /api/cart/items/paginated` | Authenticated | id | 20 |
+| Users | `GET /api/users/paginated` | Admin | createdAt | 20 |
+| My Orders | `GET /api/orders/my-orders/paginated` | Authenticated | createdAt DESC | 20 |
+| All Orders | `GET /api/orders/paginated` | Admin | createdAt DESC | 20 |
+| User Orders | `GET /api/orders/user/{userId}/paginated` | Admin | createdAt DESC | 20 |
+
+**Total Pagination Endpoints:** 9 endpoints across 6 resource types

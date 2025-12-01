@@ -103,6 +103,16 @@ public class ProductController {
     }
 
     /**
+     * Get product by slug - accessible to everyone
+     */
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<ProductResponse> getProductBySlug(@PathVariable String slug) {
+        log.debug("GET /api/products/slug/{} - Fetching product by slug", slug);
+        ProductResponse product = productService.getProductBySlug(slug);
+        return ResponseEntity.ok(product);
+    }
+
+    /**
      * Create product - ADMIN ONLY
      */
     @PostMapping

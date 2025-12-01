@@ -100,6 +100,17 @@ public class ProductService {
     }
 
     /**
+     * Get product by slug (accessible to everyone)
+     */
+    public ProductResponse getProductBySlug(String slug) {
+        log.debug("Fetching product by slug: {}", slug);
+        Product product = productRepository.findBySlug(slug)
+                .orElseThrow(() -> ProductNotFoundException.bySlug(slug));
+
+        return toProductResponseWithImages(product);
+    }
+
+    /**
      * Create a new product (ADMIN ONLY)
      */
     @Transactional

@@ -1,0 +1,692 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{float}
+
+\geometry{margin=1in}
+
+% Colors for code listings
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+% Title formatting
+\titleformat{\section}{\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+}
+
+\title{dMart - DIU Exclusive E-Commerce Platform\\Software Development Project Documentation}
+\author{Development Team}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+% Team Information
+\begin{center}
+\vspace{1cm}
+\textbf{\Large Development Team}\\[0.5cm]
+\textit{Daffodil International University}\\[1cm]
+
+\begin{tabular}{p{4cm}l}
+    \textbf{Supervisor:} & \\
+    & \textbf{[Supervisor Name]}\\
+    & \textit{[Position]}\\
+    & Daffodil International University\\[0.6cm]
+    
+    \textbf{Lead Developer:} & \\
+    & \textbf{[Lead Developer Name]}\\
+    & ID: \textit{[ID]}\\
+    & Daffodil International University\\[0.6cm]
+    
+    \textbf{Developers:} & \\
+    & \textbf{[Developer 1 Name]}\\
+    & ID: \textit{[ID]}\\
+    & Daffodil International University\\[0.3cm]
+    
+    & \textbf{[Developer 2 Name]}\\
+    & ID: \textit{[ID]}\\
+    & Daffodil International University\\[0.3cm]
+    
+    & \textbf{[Developer 3 Name]}\\
+    & ID: \textit{[ID]}\\
+    & Daffodil International University\\[0.3cm]
+    
+    & \textbf{[Developer 4 Name]}\\
+    & ID: \textit{[ID]}\\
+    & Daffodil International University\\
+\end{tabular}
+\end{center}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+\subsection{Project Overview}
+
+dMart is a comprehensive e-commerce platform exclusively designed for DIU (Daffodil International University) students and faculty. Built using Spring Boot and Java, the platform provides a complete online shopping experience with product catalog management, shopping cart functionality, order processing, and secure payment handling. The system enables administrators to manage products, categories, and orders while allowing customers to browse, search, purchase products, and track their orders. The main goal is to create a production-ready, scalable e-commerce backend that simplifies online shopping for the DIU community.
+
+\subsection{Objectives}
+
+The primary objectives of dMart include:
+
+\begin{itemize}
+    \item To enable secure user registration and authentication with role-based access control
+    \item To provide comprehensive product catalog management with hierarchical categories
+    \item To implement a reusable attribute system for flexible product specifications
+    \item To support shopping cart functionality with real-time stock validation
+    \item To facilitate order creation and payment processing with multiple payment methods
+    \item To manage product images and file storage efficiently
+    \item To ensure data security through HTML sanitization and XSS protection
+    \item To provide RESTful API endpoints for frontend integration
+\end{itemize}
+
+\section{System Requirements}
+
+\subsection{Functional Requirements}
+
+The system shall provide the following functional capabilities:
+
+\begin{itemize}
+    \item The system shall allow users to register and authenticate securely
+    \item The system shall support role-based access (ADMIN and CUSTOMER)
+    \item The system shall enable product browsing, searching, and filtering
+    \item The system shall support hierarchical category management
+    \item The system shall allow product creation with reusable attributes (Color, Size, Brand, etc.)
+    \item The system shall manage product images with primary image selection
+    \item The system shall provide shopping cart functionality with quantity validation
+    \item The system shall enable order creation from cart items
+    \item The system shall support multiple payment methods (Card, PayPal, COD)
+    \item The system shall track order and payment status
+    \item The system shall allow administrators to manage all products, categories, and orders
+    \item The system shall provide file upload and management capabilities
+\end{itemize}
+
+\subsection{Non-Functional Requirements}
+
+The system should meet the following non-functional requirements:
+
+\begin{itemize}
+    \item The system should respond to API requests within 1-2 seconds under normal load
+    \item The application should support concurrent user sessions
+    \item The system should validate and sanitize all user inputs to prevent XSS attacks
+    \item The application should use secure password encryption (BCrypt)
+    \item The system should support file uploads up to 10MB per file
+    \item The database should maintain referential integrity with proper foreign key constraints
+    \item The system should provide comprehensive error handling with standardized error responses
+    \item The application should support database migrations for version control
+\end{itemize}
+
+\section{System Design}
+
+\subsection{System Architecture}
+
+dMart follows a layered architecture pattern with clear separation of concerns. The system is organized into four main layers:
+
+\begin{enumerate}
+    \item \textbf{API Layer (Controllers)}: Handles HTTP requests/responses, input validation, and authorization
+    \item \textbf{Service Layer (Business Logic)}: Implements business rules, transaction management, and data transformation
+    \item \textbf{Repository Layer (Data Access)}: Manages database queries using Spring Data JPA
+    \item \textbf{Domain Layer (Entities)}: Contains core domain models and relationships
+\end{enumerate}
+
+The architecture diagram is shown in Figure~\ref{fig:architecture}.
+
+% To replace this placeholder with an actual image:
+% 1. Save your image in docs/latex/images/ directory (e.g., architecture-diagram.png)
+% 2. Replace the \fbox{\parbox{...}} block below with:
+%    \includegraphics[width=0.9\textwidth,keepaspectratio]{images/architecture-diagram.png}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,keepaspectratio]{images/architecture-diagram.png}
+    \caption{System Architecture Overview}
+    \label{fig:architecture}
+\end{figure}
+
+\subsection{Class Diagram}
+
+The system consists of several key domain entities and their relationships:
+
+\begin{itemize}
+    \item \textbf{User}: Represents user accounts with roles (ADMIN, CUSTOMER)
+    \item \textbf{Product}: Product catalog items with SKU, pricing, and stock information
+    \item \textbf{Category}: Hierarchical product categories with parent-child relationships
+    \item \textbf{Cart} and \textbf{CartItem}: Shopping cart functionality
+    \item \textbf{Order} and \textbf{OrderItem}: Order management with product snapshots
+    \item \textbf{Payment}: Payment records linked to orders
+    \item \textbf{Attribute} and \textbf{AttributeOption}: Reusable attribute system
+    \item \textbf{ProductAttributeValue}: Links products to attribute values
+    \item \textbf{FileMetadata} and \textbf{ProductImage}: File storage and product image management
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,keepaspectratio]{images/uml_class.png}
+    \caption{Class Diagram - Core Domain Entities}
+    \label{fig:classdiagram}
+\end{figure}
+
+\subsection{Use Case Diagram}
+
+The system supports two main actor roles:
+
+\begin{itemize}
+    \item \textbf{Customer}: Can browse products, manage cart, create orders, and view order history
+    \item \textbf{Admin}: Can manage products, categories, attributes, orders, and file uploads
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,keepaspectratio]{images/use_case.png}
+    \caption{Use Case Diagram}
+    \label{fig:usecase}
+\end{figure}
+
+\section{Implementation Details}
+
+\subsection{Tools and Technologies}
+
+The following tools and technologies were used in the development of dMart:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|}
+        \hline
+        \textbf{Technology} & \textbf{Version/Purpose} \\
+        \hline
+        Java & 21 \\
+        Spring Boot & 3.3.5 \\
+        Spring Data JPA & 6.x \\
+        Spring Security & 6.x \\
+        MySQL/MariaDB & 5.5+ \\
+        Flyway & 10.10.0 (Database Migration) \\
+        Maven & 3.9.x (Build Tool) \\
+        MapStruct & 1.5.5 (Object Mapping) \\
+        Lombok & 1.18.34 (Code Generation) \\
+        jsoup & 1.17.2 (HTML Sanitization) \\
+        IntelliJ IDEA & IDE \\
+        Git & Version Control \\
+        PowerShell & 7.x (Testing Scripts) \\
+        \hline
+        \multicolumn{2}{|l|}{\textbf{Frontend Technologies}} \\
+        \hline
+        React/Vue/Angular & Frontend Framework \\
+        HTML5/CSS3 & Markup and Styling \\
+        JavaScript/TypeScript & Client-side Scripting \\
+        Tailwind CSS/Bootstrap & CSS Framework \\
+        Axios/Fetch & HTTP Client \\
+        \hline
+    \end{tabular}
+    \caption{Technology Stack}
+    \label{tab:technologies}
+\end{table}
+
+\subsection{Project Structure}
+
+The project is organized into the following package structure:
+
+\begin{itemize}
+    \item \textbf{api/}: REST controllers for all modules (auth, product, cart, order, file, category, user)
+    \item \textbf{domain/}: Business logic services and domain-specific exceptions
+    \item \textbf{persistence/}: Entity classes, repositories, and JPA specifications
+    \item \textbf{config/}: Spring configuration classes (Security, Persistence, Exception Handling)
+    \item \textbf{util/}: Utility classes (HTML Sanitizer, Slug Generator)
+    \item \textbf{resources/db/migration/}: Flyway database migration scripts
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Project Structure Screenshot]}\\
+        \textit{Insert IDE screenshot showing package structure}
+    }}
+    \caption{Project Package Structure}
+    \label{fig:structure}
+\end{figure}
+
+\subsection{Key Classes and Methods}
+
+\subsubsection{ProductService}
+
+The \texttt{ProductService} class manages product-related business logic:
+
+\begin{itemize}
+    \item \texttt{createProduct(CreateProductRequest)} - Creates a new product with attributes and categories
+    \item \texttt{updateProduct(String, UpdateProductRequest)} - Updates product information
+    \item \texttt{getProductByPublicId(String)} - Retrieves a product by its public ID
+    \item \texttt{searchProducts(ProductFilterRequest, Pageable)} - Searches and filters products with pagination
+    \item \texttt{deleteProduct(String)} - Deletes a product and its associated data
+\end{itemize}
+
+\subsubsection{CartService}
+
+The \texttt{CartService} class handles shopping cart operations:
+
+\begin{itemize}
+    \item \texttt{addToCart(AddToCartRequest, User)} - Adds a product to the user's cart
+    \item \texttt{updateCartItem(String, UpdateCartItemRequest, User)} - Updates cart item quantity
+    \item \texttt{removeCartItem(String, User)} - Removes an item from the cart
+    \item \texttt{getCart(User)} - Retrieves the user's cart with calculated totals
+    \item \texttt{clearCart(User)} - Clears all items from the cart
+\end{itemize}
+
+\subsubsection{OrderService}
+
+The \texttt{OrderService} class manages order processing:
+
+\begin{itemize}
+    \item \texttt{createOrder(CreateOrderRequest, User)} - Creates an order from cart items
+    \item \texttt{processPayment(String, ProcessPaymentRequest, User)} - Processes payment for an order
+    \item \texttt{getOrderByPublicId(String, User)} - Retrieves order details
+    \item \texttt{getUserOrders(User, Pageable)} - Retrieves all orders for a user
+    \item \texttt{updateOrderStatus(String, OrderStatus)} - Updates order status (Admin only)
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Code Screenshot]}\\
+        \textit{Insert screenshot of key service class implementation}
+    }}
+    \caption{Key Service Implementation Example}
+    \label{fig:code}
+\end{figure}
+
+\subsection{Frontend Implementation}
+
+The dMart frontend provides a modern, responsive user interface that seamlessly integrates with the Spring Boot backend API. The frontend implementation focuses on delivering an intuitive shopping experience for customers and efficient management tools for administrators.
+
+\subsubsection{Frontend Architecture}
+
+The frontend follows a component-based architecture with clear separation between:
+\begin{itemize}
+    \item \textbf{Presentation Layer}: UI components, pages, and layouts
+    \item \textbf{State Management}: Application state and data flow
+    \item \textbf{API Integration}: HTTP client services for backend communication
+    \item \textbf{Routing}: Navigation and page routing
+    \item \textbf{Authentication}: User session and role-based access control
+\end{itemize}
+
+\subsubsection{Customer-Facing Features}
+
+The customer interface includes the following key features:
+
+\begin{itemize}
+    \item \textbf{Product Browsing}: Responsive product grid with filtering and search capabilities
+    \item \textbf{Product Details}: Comprehensive product pages with images, attributes, and descriptions
+    \item \textbf{Shopping Cart}: Interactive cart management with real-time quantity updates
+    \item \textbf{Checkout Process}: Multi-step checkout with address and payment method selection
+    \item \textbf{Order Management}: Order history and tracking with status updates
+    \item \textbf{User Authentication}: Secure login and registration with session management
+    \item \textbf{Category Navigation}: Hierarchical category browsing with breadcrumbs
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Product Listing Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Product grid, filters, search bar, category navigation}
+    }}
+    \caption{Product Listing and Browsing Interface}
+    \label{fig:product-listing}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Product Detail Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Product images, attributes, description, add to cart button}
+    }}
+    \caption{Product Detail Page}
+    \label{fig:product-detail}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Shopping Cart Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Cart items, quantities, totals, checkout button}
+    }}
+    \caption{Shopping Cart Interface}
+    \label{fig:shopping-cart}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Checkout Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Order summary, shipping address, payment method selection}
+    }}
+    \caption{Checkout Process}
+    \label{fig:checkout}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Order History Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{List of orders, order status, order details view}
+    }}
+    \caption{Order History and Tracking}
+    \label{fig:order-history}
+\end{figure}
+
+\subsubsection{Admin Features}
+
+The administrative interface provides comprehensive management capabilities:
+
+\begin{itemize}
+    \item \textbf{Product Management}: Create, edit, and delete products with image uploads
+    \item \textbf{Category Management}: Manage hierarchical product categories
+    \item \textbf{Attribute Management}: Configure reusable product attributes and options
+    \item \textbf{Order Management}: View all orders, update status, and process payments
+    \item \textbf{User Management}: View user accounts and manage roles
+    \item \textbf{Dashboard}: Overview of key metrics and recent activities
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Admin Dashboard]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Admin dashboard with statistics, recent orders, quick actions}
+    }}
+    \caption{Admin Dashboard}
+    \label{fig:admin-dashboard}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Product Management Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Product list, create/edit form, image upload interface}
+    }}
+    \caption{Admin Product Management Interface}
+    \label{fig:admin-products}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Order Management Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{All orders list, order details, status update interface}
+    }}
+    \caption{Admin Order Management Interface}
+    \label{fig:admin-orders}
+\end{figure}
+
+\subsubsection{User Interface Design}
+
+The frontend implements a modern, clean design with the following characteristics:
+
+\begin{itemize}
+    \item \textbf{Responsive Design}: Mobile-first approach ensuring optimal experience across all devices
+    \item \textbf{Intuitive Navigation}: Clear menu structure and breadcrumb navigation
+    \item \textbf{Visual Feedback}: Loading states, success/error messages, and form validation feedback
+    \item \textbf{Accessibility}: Semantic HTML, proper ARIA labels, and keyboard navigation support
+    \item \textbf{Performance}: Optimized images, lazy loading, and efficient API calls
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Login/Registration Page]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Login form, registration form, authentication UI}
+    }}
+    \caption{User Authentication Interface}
+    \label{fig:auth}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Mobile Responsive View]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Mobile view of product listing or cart on mobile device}
+    }}
+    \caption{Mobile Responsive Design}
+    \label{fig:mobile}
+\end{figure}
+
+\section{Testing}
+
+\subsection{Test Strategy}
+
+The system was tested using a combination of manual testing and automated PowerShell test scripts. Each module (Product, Cart, Order, User, File) has dedicated test scripts that simulate API requests and validate responses. The testing approach includes:
+
+\begin{itemize}
+    \item Unit testing for business logic validation
+    \item Integration testing via PowerShell scripts for API endpoints
+    \item Manual testing for user workflows and edge cases
+    \item Database migration testing to ensure schema consistency
+\end{itemize}
+
+\subsection{Test Cases}
+
+Sample test cases are shown in Table~\ref{tab:testcases}.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|p{3cm}|p{4cm}|p{4cm}|p{2cm}|}
+        \hline
+        \textbf{Test Case} & \textbf{Input} & \textbf{Expected Output} & \textbf{Result} \\
+        \hline
+        User Registration & Valid email, password, name & User created successfully & Pass \\
+        \hline
+        Product Creation & Valid product data with SKU & Product created with public ID & Pass \\
+        \hline
+        Add to Cart & Product ID, quantity & Item added to cart & Pass \\
+        \hline
+        Create Order & Cart items, address, payment & Order created with order number & Pass \\
+        \hline
+        Payment Processing & Order ID, payment details & Payment status updated & Pass \\
+        \hline
+        Invalid Login & Wrong credentials & 401 Unauthorized & Pass \\
+        \hline
+        Stock Validation & Quantity exceeds stock & Error message & Pass \\
+        \hline
+    \end{tabular}
+    \caption{Sample Test Cases}
+    \label{tab:testcases}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Testing Screenshot]}\\
+        \textit{Insert screenshot of test execution or test results}
+    }}
+    \caption{Test Execution Results}
+    \label{fig:testing}
+\end{figure}
+
+\section{Challenges and Limitations}
+
+During the development of dMart, several challenges were encountered:
+
+\begin{itemize}
+    \item \textbf{Complex Attribute System}: Implementing a reusable attribute system that supports multiple product types required careful database design and service layer abstraction.
+    \item \textbf{File Storage Management}: Creating a generic file storage service that can be extended to other entities while maintaining security and organization was challenging.
+    \item \textbf{Order Snapshotting}: Ensuring that order items preserve product information at the time of purchase required implementing snapshot fields in the OrderItem entity.
+    \item \textbf{HTML Sanitization}: Implementing XSS protection for rich text product descriptions while maintaining formatting required careful configuration of the jsoup sanitizer.
+    \item \textbf{Session-based Authentication}: While suitable for single-server deployments, session-based authentication limits scalability for distributed systems.
+\end{itemize}
+
+\textbf{Current Limitations:}
+
+\begin{itemize}
+    \item The system uses local file storage, which may not be suitable for cloud deployments
+    \item Session-based authentication requires session affinity for multi-server deployments
+    \item No built-in caching layer for frequently accessed data
+    \item Payment processing is simulated and requires integration with actual payment gateways
+    \item No email notification system for order confirmations
+\end{itemize}
+
+\section{Conclusion and Future Work}
+
+\subsection{Conclusion}
+
+dMart successfully achieves all major objectives as a production-ready e-commerce backend platform. The system provides comprehensive functionality for product management, shopping cart operations, order processing, and secure user authentication. The layered architecture ensures maintainability and scalability, while the reusable attribute system and file storage module demonstrate extensibility. The implementation follows Spring Boot best practices and includes proper security measures, error handling, and database migration support.
+
+\subsection{Future Work}
+
+The following enhancements are planned for future versions:
+
+\begin{itemize}
+    \item \textbf{JWT Authentication}: Implement JWT-based authentication for distributed deployments
+    \item \textbf{Cloud Storage Integration}: Migrate file storage to AWS S3 or Azure Blob Storage
+    \item \textbf{Caching Layer}: Add Redis caching for frequently accessed products and categories
+    \item \textbf{Email Notifications}: Implement email service for order confirmations and status updates
+    \item \textbf{Payment Gateway Integration}: Integrate with real payment gateways (Stripe, PayPal)
+    \item \textbf{Search Enhancement}: Add full-text search capabilities using Elasticsearch
+    \item \textbf{Admin Dashboard}: Develop a comprehensive admin dashboard for analytics and reporting
+    \item \textbf{API Versioning}: Implement URI-based API versioning for backward compatibility
+    \item \textbf{Image Optimization}: Add automatic image resizing and optimization
+    \item \textbf{Review System}: Implement product review and rating functionality
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: Frontend Homepage]}\\
+        \textit{Insert screenshot showing:}\\
+        \textit{Homepage with featured products, categories, navigation menu}
+    }}
+    \caption{Frontend Homepage Overview}
+    \label{fig:frontend}
+\end{figure}
+
+\section{Appendices}
+
+\subsection{Database Schema}
+
+The database schema includes the following main tables:
+
+\begin{itemize}
+    \item \texttt{appuser} - User accounts
+    \item \texttt{category} - Product categories with hierarchy
+    \item \texttt{product} - Product catalog
+    \item \texttt{product\_category} - Many-to-many product-category relationship
+    \item \texttt{attribute} and \texttt{attribute\_option} - Reusable attribute system
+    \item \texttt{product\_attribute\_value} - Product-attribute associations
+    \item \texttt{cart} and \texttt{cart\_item} - Shopping cart
+    \item \texttt{order} and \texttt{order\_item} - Orders and line items
+    \item \texttt{payment} - Payment records
+    \item \texttt{file\_metadata} and \texttt{product\_image} - File storage
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth,keepaspectratio]{images/database-schema.png}
+    \caption{Database Entity Relationship Diagram}
+    \label{fig:database}
+\end{figure}
+
+\subsection{API Endpoints Summary}
+
+Key API endpoints include:
+
+\begin{itemize}
+    \item \texttt{POST /api/auth/register} - User registration
+    \item \texttt{POST /api/auth/login} - User authentication
+    \item \texttt{GET /api/products} - List products with filtering
+    \item \texttt{POST /api/products} - Create product (Admin)
+    \item \texttt{GET /api/cart} - Get user's cart
+    \item \texttt{POST /api/cart/items} - Add item to cart
+    \item \texttt{POST /api/orders} - Create order
+    \item \texttt{POST /api/orders/\{id\}/payment} - Process payment
+    \item \texttt{GET /api/files/products/\{id\}/images} - Get product images
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \fbox{\parbox{0.9\textwidth}{\centering
+        \textbf{[PLACEHOLDER: API Documentation Screenshot]}\\
+        \textit{Insert screenshot of API documentation or Postman collection}
+    }}
+    \caption{API Endpoints Documentation}
+    \label{fig:api}
+\end{figure}
+
+\subsection{Configuration Files}
+
+The main configuration is managed through \texttt{application.yml}:
+
+\begin{lstlisting}[language=yaml, caption=Application Configuration]
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/ecommerce_db
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+app:
+  file:
+    upload-dir: uploads
+    max-file-size: 10485760
+\end{lstlisting}
+
+\end{document}
+

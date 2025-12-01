@@ -12,5 +12,9 @@ public class ProductNotFoundException extends RuntimeException {
     public static ProductNotFoundException bySku(String sku) {
         return new ProductNotFoundException("Product not found with SKU: " + sku);
     }
+
+    public static ProductNotFoundException bySlug(String slug) {
+        return new ProductNotFoundException("Product not found with slug: " + slug);
+    }
 }
 

@@ -113,6 +113,29 @@ public class AttributeOptionService {
         option.setActive(false);
         attributeOptionRepository.save(option);
     }
+    
+    public void deleteOption(String publicId) {
+        AttributeOption option = attributeOptionRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new IllegalArgumentException("Attribute option not found with ID: " + publicId));
+        
+        // Check if option is being used by any products
+        long productUsageCount = attributeOptionRepository.countProductUsages(publicId);
+        if (productUsageCount > 0) {
+            throw new IllegalStateException(
+                "Cannot delete option '" + option.getName() + "' because it is used by " + 
+                productUsageCount + " product(s). Please remove it from all products first or use deactivate instead."
+            );
+        }
+        
+        // Remove from attribute's options list
+        Attribute attribute = option.getAttribute();
+        if (attribute != null) {
+            attribute.removeOption(option);
+        }
+        
+        // Delete the option
+        attributeOptionRepository.deleteByPublicId(publicId);
+    }
 
     private String generateSlug(String name) {
         return name.toLowerCase()
